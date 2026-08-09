@@ -107,6 +107,15 @@ app:
     ttl: ${CACHE_TTL:3600} # 1 hour in seconds
     prefix: "ziboto"
   
+  # Email / Resend Configuration
+  email:
+    api-key: ${RESEND_API_KEY:}
+    from-email: ${RESEND_FROM_EMAIL:noreply@ziboto.com}
+    from-name: ${RESEND_FROM_NAME:Ziboto}
+    verification-url: ${RESEND_VERIFICATION_URL:http://localhost:5173/verify-email}
+    reset-password-url: ${RESEND_RESET_URL:http://localhost:5173/reset-password}
+    support-email: ${RESEND_SUPPORT_EMAIL:support@ziboto.com}
+  
   # Redis Configuration
   redis:
     # Rate Limiting Configuration

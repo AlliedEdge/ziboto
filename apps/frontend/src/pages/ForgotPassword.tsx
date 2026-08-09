@@ -8,6 +8,31 @@ import { AuthLayout } from '../components/layout';
 import { Input, Button } from '../components/ui';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthOperations } from '../hooks/useAuthOperations';
+import { useCallback, useEffect, useRef } from 'react';
+
+// Mirrors the backend OTP TTL (default 5 minutes)
+const RESEND_COOLDOWN_SECONDS = 5 * 60;
+
+function useResendCooldown(initialSeconds: number) {
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const start = useCallback((seconds = initialSeconds) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setSecondsLeft(seconds);
+    timerRef.current = setInterval(() => {
+      setSecondsLeft((s) => {
+        if (s <= 1) { clearInterval(timerRef.current!); return 0; }
+        return s - 1;
+      });
+    }, 1000);
+  }, [initialSeconds]);
+
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+
+  const formatted = `${String(Math.floor(secondsLeft / 60)).padStart(2, '0')}:${String(secondsLeft % 60).padStart(2, '0')}`;
+  return { secondsLeft, formatted, start };
+}
 
 // Validation schema
 const forgotPasswordSchema = z.object({
@@ -23,6 +48,8 @@ const ForgotPassword = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState('');
   const { forgotPassword } = useAuthOperations();
+  const { secondsLeft, formatted: cooldownFormatted, start: startCooldown } =
+    useResendCooldown(RESEND_COOLDOWN_SECONDS);
 
   const {
     register,
@@ -40,15 +67,17 @@ const ForgotPassword = () => {
       await forgotPassword.handleExecute({ email: data.email });
       setSubmittedEmail(data.email);
       setIsSuccess(true);
+      startCooldown();
     } catch (error) {
-      // Error is already displayed by the hook
       console.error('Forgot password failed:', error);
     }
   };
 
   const handleResend = async () => {
+    if (secondsLeft > 0) return;
     try {
       await forgotPassword.handleExecute({ email: submittedEmail });
+      startCooldown();
     } catch (error) {
       console.error('Resend failed:', error);
     }
@@ -191,10 +220,14 @@ const ForgotPassword = () => {
                 size="md"
                 fullWidth
                 isLoading={forgotPassword.isLoading}
-                disabled={forgotPassword.isLoading}
+                disabled={forgotPassword.isLoading || secondsLeft > 0}
                 onClick={handleResend}
               >
-                {forgotPassword.isLoading ? 'Resending...' : "Didn't receive the email? Resend"}
+                {secondsLeft > 0
+                  ? `Resend available in ${cooldownFormatted}`
+                  : forgotPassword.isLoading
+                  ? 'Resending...'
+                  : "Didn't receive the email? Resend"}
               </Button>
             </div>
 

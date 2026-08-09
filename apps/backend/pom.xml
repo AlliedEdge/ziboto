@@ -18,6 +18,7 @@
 		<mapstruct.version>1.5.5.Final</mapstruct.version>
 		<springdoc.version>2.7.0</springdoc.version>
 		<jjwt.version>0.12.5</jjwt.version>
+		<resend.version>3.1.0</resend.version>
 	</properties>
 	<dependencies>
 		<!-- Spring Boot Starters -->
@@ -98,6 +99,13 @@
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>${springdoc.version}</version>
+		</dependency>
+		
+		<!-- Resend Email SDK -->
+		<dependency>
+			<groupId>com.resend</groupId>
+			<artifactId>resend-java</artifactId>
+			<version>${resend.version}</version>
 		</dependency>
 		
 		<!-- Lombok -->

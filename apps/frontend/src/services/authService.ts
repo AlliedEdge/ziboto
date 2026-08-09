@@ -15,6 +15,8 @@ import type {
   MessageResponseDto,
   ForgotPasswordRequestDto,
   ResetPasswordRequestDto,
+  VerifyEmailRequestDto,
+  SendVerificationEmailRequestDto,
   RetryConfig,
   ApiResponse,
 } from '../types/api.types';
@@ -40,12 +42,12 @@ const AUTH_RETRY_CONFIG: RetryConfig = {
   ...DEFAULT_RETRY_CONFIG,
   maxRetries: 2, // Fewer retries for auth requests
   retryDelay: 1000,
-  // Don't retry auth errors (401) or validation errors (400)
-  retryableStatusCodes: [408, 429, 500, 502, 503, 504],
+  // Don't retry auth errors (401), validation errors (400), or conflict errors (409)
+  retryableStatusCodes: [408, 500, 502, 503, 504],
   shouldRetry: (error: any) => {
     const status = error?.response?.status;
-    // Never retry 400 (validation errors) or 401 (auth errors)
-    if (status === 400 || status === 401 || status === 403) {
+    // Never retry client errors — only transient server/network errors
+    if (status >= 400 && status < 500) {
       return false;
     }
     return true;
@@ -82,14 +84,14 @@ export const authService = {
   },
 
   /**
-   * Register new user
+   * Register new user — returns void (202 Accepted, no tokens)
    * POST /api/v1/auth/register
    */
-  async register(data: RegisterRequestDto): Promise<AuthResponseDto> {
+  async register(data: RegisterRequestDto): Promise<void> {
     try {
-      const response = await withRetry(
+      await withRetry(
         async () => {
-          return axios.post<ApiResponse<AuthResponseDto>>('/auth/register', {
+          return axios.post<ApiResponse<void>>('/auth/register', {
             username: data.username,
             email: data.email,
             password: data.password,
@@ -99,9 +101,7 @@ export const authService = {
         },
         AUTH_RETRY_CONFIG
       );
-
-      // Backend returns ApiResponse<AuthResponseDto>, so we need to unwrap it
-      return response.data.data;
+      // Backend returns 202 with no token payload — nothing to unwrap
     } catch (error: any) {
       logError(error, 'authService.register', { email: data.email });
       throw normalizeError(error);
@@ -166,13 +166,13 @@ export const authService = {
 
   /**
    * Send forgot password email
-   * POST /api/v1/auth/forgot-password
+   * POST /api/v1/auth/password/forgot
    */
   async forgotPassword(data: ForgotPasswordRequestDto): Promise<MessageResponseDto> {
     try {
       const response = await withRetry(
         async () => {
-          return axios.post<ApiResponse<MessageResponseDto>>('/auth/forgot-password', {
+          return axios.post<ApiResponse<MessageResponseDto>>('/auth/password/forgot', {
             email: data.email,
           });
         },
@@ -188,13 +188,14 @@ export const authService = {
   },
 
   /**
-   * Reset password with token
-   * POST /api/v1/auth/reset-password
+   * Reset password with OTP
+   * POST /api/v1/auth/password/reset
    */
   async resetPassword(data: ResetPasswordRequestDto): Promise<MessageResponseDto> {
     try {
-      const response = await axios.post<ApiResponse<MessageResponseDto>>('/auth/reset-password', {
-        token: data.token,
+      const response = await axios.post<ApiResponse<MessageResponseDto>>('/auth/password/reset', {
+        email: data.email,
+        otp: data.otp,
         newPassword: data.newPassword,
       });
 
@@ -207,18 +208,29 @@ export const authService = {
   },
 
   /**
-   * Verify email with token
-   * POST /api/v1/auth/verify-email
+   * Verify email with OTP — returns full AuthenticationResponse (account activated)
+   * POST /api/v1/auth/email/verify
    */
-  async verifyEmail(token: string): Promise<MessageResponseDto> {
+  async verifyEmail(request: VerifyEmailRequestDto): Promise<AuthResponseDto> {
     try {
-      const response = await axios.post<ApiResponse<MessageResponseDto>>('/auth/verify-email', {
-        token,
+      console.log('[authService] Calling verifyEmail API:', { email: request.email, otp: request.otp });
+      
+      const response = await axios.post<ApiResponse<AuthResponseDto>>('/auth/email/verify', {
+        email: request.email,
+        otp: request.otp,
       });
 
-      // Backend returns ApiResponse<MessageResponseDto>, so we need to unwrap it
+      console.log('[authService] verifyEmail response:', response.data);
+
+      // Backend returns ApiResponse<AuthResponseDto> with tokens on success
+      if (!response.data.data) {
+        console.error('[authService] verifyEmail: response.data.data is missing!', response.data);
+        throw new Error('Invalid response structure from server');
+      }
+
       return response.data.data;
     } catch (error: any) {
+      console.error('[authService] verifyEmail error:', error);
       logError(error, 'authService.verifyEmail');
       throw normalizeError(error);
     }
@@ -226,13 +238,13 @@ export const authService = {
 
   /**
    * Resend verification email
-   * POST /api/v1/auth/resend-verification
+   * POST /api/v1/auth/email/send-verification
    */
   async resendVerification(email: string): Promise<MessageResponseDto> {
     try {
       const response = await withRetry(
         async () => {
-          return axios.post<ApiResponse<MessageResponseDto>>('/auth/resend-verification', {
+          return axios.post<ApiResponse<MessageResponseDto>>('/auth/email/send-verification', {
             email,
           });
         },

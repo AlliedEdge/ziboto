@@ -1,5 +1,12 @@
 package com.ziboto.backend.auth.mapper;
 
+import org.mapstruct.AfterMapping;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.mapstruct.ReportingPolicy;
+
 import com.ziboto.backend.auth.dto.AuthenticationResponse;
 import com.ziboto.backend.auth.dto.RegisterRequest;
 import com.ziboto.backend.auth.entity.RefreshToken;
@@ -7,7 +14,6 @@ import com.ziboto.backend.user.dto.UserResponse;
 import com.ziboto.backend.user.entity.User;
 import com.ziboto.backend.user.entity.UserRole;
 import com.ziboto.backend.user.entity.UserStatus;
-import org.mapstruct.*;
 
 @Mapper(
     componentModel = "spring",
@@ -36,7 +42,7 @@ public interface AuthMapper {
             user.setRole(UserRole.ROLE_USER);
         }
         if (user.getStatus() == null) {
-            user.setStatus(UserStatus.ACTIVE);
+            user.setStatus(UserStatus.PENDING);
         }
         if (user.getEmailVerified() == null) {
             user.setEmailVerified(false);

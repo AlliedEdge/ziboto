@@ -1,10 +1,8 @@
 package com.ziboto.backend.exception;
 
-import com.ziboto.backend.common.constant.ErrorCode;
-import com.ziboto.backend.common.dto.ApiResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.ConstraintViolationException;
-import lombok.extern.slf4j.Slf4j;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -26,9 +24,11 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import com.ziboto.backend.common.dto.ApiResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Global exception handler for centralized error handling.
@@ -90,7 +90,7 @@ public class GlobalExceptionHandler {
                     ex.getErrorCode().name(), path, ex.getMessage());
         }
         
-        ApiResponse<Object> response = ApiResponse.error(ex.getMessage());
+        ApiResponse<Object> response = ApiResponse.error(ex.getMessage(), ex.getErrorCode().name());
         
         return ResponseEntity
                 .status(ex.getErrorCode().getHttpStatus())

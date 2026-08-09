@@ -1,17 +1,24 @@
-import { useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Lock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Lock, Mail, CheckCircle, AlertCircle } from 'lucide-react';
 import { AuthLayout } from '../components/layout';
 import { Input, Button, PasswordStrengthIndicator } from '../components/ui';
 import { motion } from 'framer-motion';
 import { useAuthOperations } from '../hooks/useAuthOperations';
 
-// Validation schema
 const resetPasswordSchema = z
   .object({
+    email: z
+      .string()
+      .min(1, 'Email is required')
+      .email('Please enter a valid email address'),
+    otp: z
+      .string()
+      .min(1, 'Reset code is required')
+      .regex(/^\d{6}$/, 'Reset code must be exactly 6 digits'),
     password: z
       .string()
       .min(1, 'Password is required')
@@ -30,20 +37,27 @@ type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
   const { resetPassword } = useAuthOperations();
-  
-  const [hasError] = useState(!token);
+
+  // Pre-fill email from query param if the reset email link includes it
+  const emailFromQuery = searchParams.get('email') ?? '';
+
+  // Individual OTP digit inputs
+  const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
     mode: 'onChange',
     defaultValues: {
+      email: emailFromQuery,
+      otp: '',
       password: '',
       confirmPassword: '',
     },
@@ -51,78 +65,58 @@ const ResetPassword = () => {
 
   const password = watch('password');
 
-  const onSubmit = async (data: ResetPasswordFormData) => {
-    if (!token) return;
+  // Sync digits array into the hidden otp field
+  useEffect(() => {
+    setValue('otp', digits.join(''), { shouldValidate: digits.join('').length === 6 });
+  }, [digits, setValue]);
 
+  const handleDigitChange = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, '').slice(-1);
+    const next = [...digits];
+    next[index] = digit;
+    setDigits(next);
+    if (digit && index < 5) inputRefs.current[index + 1]?.focus();
+  };
+
+  const handleDigitKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace') {
+      if (digits[index]) {
+        const next = [...digits];
+        next[index] = '';
+        setDigits(next);
+      } else if (index > 0) {
+        inputRefs.current[index - 1]?.focus();
+      }
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === 'ArrowRight' && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleDigitPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasted) return;
+    const next = ['', '', '', '', '', ''];
+    pasted.split('').forEach((ch, i) => { next[i] = ch; });
+    setDigits(next);
+    inputRefs.current[Math.min(pasted.length, 5)]?.focus();
+  };
+
+  const onSubmit = async (data: ResetPasswordFormData) => {
     try {
       await resetPassword.handleExecute({
-        token,
+        email: data.email,
+        otp: data.otp,
         newPassword: data.password,
       });
     } catch (error) {
-      // Error is already displayed by the hook
       console.error('Reset password failed:', error);
     }
   };
 
-  // Invalid or expired token
-  if (hasError) {
-    return (
-      <AuthLayout
-        title="Invalid Reset Link"
-        subtitle="This password reset link is invalid or has expired"
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
-        >
-          {/* Error Icon */}
-          <div className="flex justify-center">
-            <div className="relative">
-              <div className="absolute inset-0 bg-red-500/20 rounded-full blur-xl" />
-              <div className="relative bg-red-500/10 p-4 rounded-full">
-                <AlertCircle className="w-16 h-16 text-red-500" />
-              </div>
-            </div>
-          </div>
-
-          {/* Error Message */}
-          <div className="text-center space-y-3">
-            <p className="text-dark-300">
-              The password reset link you used is either invalid or has expired.
-              Reset links are valid for 1 hour.
-            </p>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="space-y-3">
-            <Button
-              type="button"
-              variant="primary"
-              size="lg"
-              fullWidth
-              onClick={() => (window.location.href = '/forgot-password')}
-            >
-              Request New Link
-            </Button>
-
-            <Button
-              type="button"
-              variant="ghost"
-              size="md"
-              fullWidth
-              onClick={() => (window.location.href = '/login')}
-            >
-              Back to Login
-            </Button>
-          </div>
-        </motion.div>
-      </AuthLayout>
-    );
-  }
-
-  // Success state
+  // ── Success state ────────────────────────────────────────────────────────
   if (resetPassword.isSuccess) {
     return (
       <AuthLayout
@@ -134,16 +128,10 @@ const ResetPassword = () => {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6"
         >
-          {/* Success Icon */}
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{
-              type: 'spring',
-              stiffness: 200,
-              damping: 15,
-              delay: 0.1,
-            }}
+            transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
             className="flex justify-center"
           >
             <div className="relative">
@@ -154,19 +142,15 @@ const ResetPassword = () => {
             </div>
           </motion.div>
 
-          {/* Success Message */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-center space-y-3"
+            className="text-center"
           >
-            <p className="text-dark-200">
-              You can now sign in with your new password.
-            </p>
+            <p className="text-dark-200">You can now sign in with your new password.</p>
           </motion.div>
 
-          {/* Action Button */}
           <Button
             type="button"
             variant="primary"
@@ -181,14 +165,14 @@ const ResetPassword = () => {
     );
   }
 
-  // Reset password form
+  // ── Reset form ────────────────────────────────────────────────────────────
   return (
     <AuthLayout
       title="Reset Password"
-      subtitle="Enter your new password below"
+      subtitle="Enter the code from your email and choose a new password"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        {/* Error Message */}
+        {/* API error */}
         {resetPassword.error && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -199,7 +183,53 @@ const ResetPassword = () => {
           </motion.div>
         )}
 
-        {/* New Password Input */}
+        {/* Email */}
+        <Input
+          {...register('email')}
+          type="email"
+          label="Email Address"
+          placeholder="you@example.com"
+          error={errors.email?.message}
+          leftIcon={<Mail className="w-5 h-5" />}
+          autoComplete="email"
+          disabled={resetPassword.isLoading}
+        />
+
+        {/* OTP digits */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-dark-200">
+            6-Digit Reset Code
+          </label>
+          <div className="flex gap-2" onPaste={handleDigitPaste}>
+            {digits.map((digit, i) => (
+              <input
+                key={i}
+                ref={(el) => { inputRefs.current[i] = el; }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleDigitChange(i, e.target.value)}
+                onKeyDown={(e) => handleDigitKeyDown(i, e)}
+                disabled={resetPassword.isLoading}
+                aria-label={`Digit ${i + 1} of reset code`}
+                className={[
+                  'w-11 h-14 text-center text-xl font-semibold rounded-lg border transition-colors',
+                  'bg-dark-800 text-dark-100 outline-none',
+                  digit
+                    ? 'border-primary-500 ring-1 ring-primary-500/50'
+                    : 'border-dark-600 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/50',
+                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                ].join(' ')}
+              />
+            ))}
+          </div>
+          {errors.otp && (
+            <p className="text-sm text-red-400">{errors.otp.message}</p>
+          )}
+        </div>
+
+        {/* New password */}
         <div>
           <Input
             {...register('password')}
@@ -210,13 +240,12 @@ const ResetPassword = () => {
             leftIcon={<Lock className="w-5 h-5" />}
             showPasswordToggle
             autoComplete="new-password"
-            autoFocus
             disabled={resetPassword.isLoading}
           />
           <PasswordStrengthIndicator password={password} />
         </div>
 
-        {/* Confirm Password Input */}
+        {/* Confirm password */}
         <Input
           {...register('confirmPassword')}
           type="password"
@@ -229,53 +258,29 @@ const ResetPassword = () => {
           disabled={resetPassword.isLoading}
         />
 
-        {/* Password Requirements */}
+        {/* Password requirements */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
           className="bg-dark-800/50 border border-dark-700 rounded-lg p-4 space-y-2"
         >
-          <p className="text-xs font-medium text-dark-300 mb-2">
-            Password must contain:
-          </p>
+          <p className="text-xs font-medium text-dark-300 mb-2">Password must contain:</p>
           <ul className="space-y-1.5 text-xs text-dark-400">
-            <li className="flex items-center gap-2">
-              <div
-                className={`w-1.5 h-1.5 rounded-full ${
-                  password?.length >= 8 ? 'bg-green-500' : 'bg-dark-600'
-                }`}
-              />
-              At least 8 characters
-            </li>
-            <li className="flex items-center gap-2">
-              <div
-                className={`w-1.5 h-1.5 rounded-full ${
-                  /[A-Z]/.test(password || '') ? 'bg-green-500' : 'bg-dark-600'
-                }`}
-              />
-              One uppercase letter
-            </li>
-            <li className="flex items-center gap-2">
-              <div
-                className={`w-1.5 h-1.5 rounded-full ${
-                  /[a-z]/.test(password || '') ? 'bg-green-500' : 'bg-dark-600'
-                }`}
-              />
-              One lowercase letter
-            </li>
-            <li className="flex items-center gap-2">
-              <div
-                className={`w-1.5 h-1.5 rounded-full ${
-                  /[0-9]/.test(password || '') ? 'bg-green-500' : 'bg-dark-600'
-                }`}
-              />
-              One number
-            </li>
+            {[
+              { label: 'At least 8 characters', test: (p: string) => p?.length >= 8 },
+              { label: 'One uppercase letter', test: (p: string) => /[A-Z]/.test(p || '') },
+              { label: 'One lowercase letter', test: (p: string) => /[a-z]/.test(p || '') },
+              { label: 'One number',            test: (p: string) => /[0-9]/.test(p || '') },
+            ].map(({ label, test }) => (
+              <li key={label} className="flex items-center gap-2">
+                <div className={`w-1.5 h-1.5 rounded-full ${test(password) ? 'bg-green-500' : 'bg-dark-600'}`} />
+                {label}
+              </li>
+            ))}
           </ul>
         </motion.div>
 
-        {/* Submit Button */}
         <Button
           type="submit"
           variant="primary"
@@ -287,7 +292,6 @@ const ResetPassword = () => {
           {resetPassword.isLoading ? 'Resetting password...' : 'Reset Password'}
         </Button>
 
-        {/* Back to Login */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

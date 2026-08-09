@@ -105,7 +105,9 @@ export const useAuthStore = create<AuthState>()(
         },
 
         /**
-         * Register new user
+         * Register new user — creates account in PENDING state, no tokens issued.
+         * After this call navigate to /verify-email-pending; tokens arrive only
+         * after the email OTP is successfully verified.
          */
         register: async (data: RegisterData) => {
           set({
@@ -116,23 +118,19 @@ export const useAuthStore = create<AuthState>()(
           });
 
           try {
-            const response = await authService.register(data);
+            await authService.register(data); // void — 202, no tokens
 
-            // Store tokens
-            tokenService.setTokens(response.accessToken, response.refreshToken);
-
-            // Update state
             set({
-              user: response.user,
-              isAuthenticated: true,
+              user: null,
+              isAuthenticated: false,
               isLoading: false,
               error: null,
-              successMessage: 'Registration successful! Welcome aboard!',
+              successMessage: 'Account created! Please check your email for a verification code.',
               loadingStates: { ...get().loadingStates, register: false },
             });
           } catch (error: any) {
             const errorMessage = extractErrorMessage(error);
-            
+
             set({
               user: null,
               isAuthenticated: false,

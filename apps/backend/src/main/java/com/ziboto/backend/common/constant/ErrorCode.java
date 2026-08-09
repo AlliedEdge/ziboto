@@ -1,8 +1,9 @@
 package com.ziboto.backend.common.constant;
 
+import org.springframework.http.HttpStatus;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 
 /**
  * Standardized error codes for the application.
@@ -59,6 +60,10 @@ public enum ErrorCode {
     INVALID_MFA_CODE(2012, "Invalid MFA code", HttpStatus.UNAUTHORIZED),
     SESSION_EXPIRED(2013, "Session has expired", HttpStatus.UNAUTHORIZED),
     CONCURRENT_SESSION_LIMIT(2014, "Maximum concurrent sessions exceeded", HttpStatus.FORBIDDEN),
+    INVALID_OTP(2015, "Invalid or expired verification code", HttpStatus.BAD_REQUEST),
+    OTP_RATE_LIMITED(2016, "Too many OTP requests. Please wait before requesting a new code", HttpStatus.TOO_MANY_REQUESTS),
+    EMAIL_ALREADY_VERIFIED(2017, "Email address is already verified", HttpStatus.CONFLICT),
+    ACCOUNT_PENDING_VERIFICATION(2018, "Account is pending email verification", HttpStatus.FORBIDDEN),
     
     // ==================== User Errors (3000-3099) ====================
     
