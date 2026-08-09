@@ -8,6 +8,7 @@ import {
   ForgotPassword,
   ResetPassword,
   EmailVerificationSuccess,
+  VerifyEmailPending,
   SessionExpired,
   InitializingApp,
   FileManager,
@@ -80,6 +81,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<EmailVerificationSuccess />} />
+          <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
           <Route path="/session-expired" element={<SessionExpired />} />
 
           {/* Catch all - redirect to root */}

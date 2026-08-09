@@ -8,6 +8,7 @@ import { AuthLayout } from '../components/layout';
 import { Input, Button, Checkbox } from '../components/ui';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
+import { extractErrorCode } from '../utils/apiErrorHandler';
 
 // Validation schema
 const loginSchema = z.object({
@@ -50,11 +51,23 @@ const Login = () => {
     
     try {
       await login(data);
-      // Navigate to initialization page to load required data
       navigate('/initializing', { replace: true });
-    } catch (error) {
+    } catch (error: any) {
+      // If the account exists but hasn't verified email yet, send them to
+      // the verification page so they can complete the flow
+      if (extractErrorCode(error) === 'ACCOUNT_PENDING_VERIFICATION') {
+        // Derive the email: if they typed an email use it directly,
+        // otherwise we only have the username — pass what we have and
+        // the page will use it to call resend/verify.
+        const identifier = data.usernameOrEmail;
+        const isEmail = identifier.includes('@');
+        navigate('/verify-email-pending', {
+          replace: true,
+          state: { email: isEmail ? identifier : undefined, username: identifier },
+        });
+        return;
+      }
       console.error('Login failed:', error);
-      // Error is handled by the store
     } finally {
       setIsLoading(false);
     }

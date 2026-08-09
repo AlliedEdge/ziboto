@@ -1,38 +1,55 @@
 package com.ziboto.backend.auth.controller;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.ziboto.backend.auth.dto.AuthenticationResponse;
+import com.ziboto.backend.auth.dto.ForgotPasswordRequest;
 import com.ziboto.backend.auth.dto.LoginRequest;
 import com.ziboto.backend.auth.dto.RefreshTokenRequest;
 import com.ziboto.backend.auth.dto.RegisterRequest;
+import com.ziboto.backend.auth.dto.ResetPasswordRequest;
+import com.ziboto.backend.auth.dto.SendVerificationEmailRequest;
+import com.ziboto.backend.auth.dto.VerifyEmailRequest;
 import com.ziboto.backend.auth.dto.VerifyTokenResponse;
 import com.ziboto.backend.auth.service.AuthService;
 import com.ziboto.backend.common.dto.ApiResponse;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
 
 /**
  * Authentication REST controller.
  * 
  * <p>Provides endpoints for user authentication operations:</p>
  * <ul>
- *   <li>POST /api/v1/auth/register - Register new user</li>
- *   <li>POST /api/v1/auth/login - Login with credentials</li>
- *   <li>POST /api/v1/auth/logout - Logout and revoke tokens</li>
+ *   <li>POST /api/v1/auth/register               - Register new user</li>
+ *   <li>POST /api/v1/auth/login                  - Login with credentials</li>
+ *   <li>POST /api/v1/auth/logout                 - Logout and revoke tokens</li>
+ *   <li>POST /api/v1/auth/refresh                - Refresh access token</li>
+ *   <li>GET  /api/v1/auth/verify                 - Verify token validity</li>
+ *   <li>POST /api/v1/auth/email/send-verification - Send email-verification OTP</li>
+ *   <li>POST /api/v1/auth/email/verify           - Confirm email with OTP</li>
+ *   <li>POST /api/v1/auth/password/forgot        - Request password-reset OTP</li>
+ *   <li>POST /api/v1/auth/password/reset         - Complete password reset</li>
+ * </ul>
  *   <li>POST /api/v1/auth/refresh - Refresh access token</li>
  *   <li>GET /api/v1/auth/verify - Verify token validity</li>
  * </ul>
@@ -50,21 +67,25 @@ public class AuthController {
     
     /**
      * Register a new user account.
-     * 
-     * @param request registration details including username, email, and password
+     *
+     * <p>Creates the account in PENDING state and sends an email verification OTP.
+     * No JWT tokens are returned — the client must call POST /email/verify with
+     * the OTP to activate the account and receive tokens.</p>
+     *
+     * @param request     registration details including username, email, and password
      * @param httpRequest HTTP request for extracting client IP address
-     * @return authentication response with JWT tokens and user information
+     * @return 202 Accepted with no token payload
      */
     @PostMapping("/register")
     @Operation(
         summary = "Register a new user",
-        description = "Create a new user account with the provided credentials. Returns JWT tokens upon successful registration."
+        description = "Creates the account in PENDING state and sends a 6-digit email verification OTP. " +
+                      "No tokens are issued until POST /email/verify is called with the correct OTP."
     )
     @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "201",
-            description = "User successfully registered",
-            content = @Content(schema = @Schema(implementation = AuthenticationResponse.class))
+            responseCode = "202",
+            description = "Account created — verification email sent"
         ),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "400",
@@ -75,19 +96,20 @@ public class AuthController {
             description = "Username or email already exists"
         )
     })
-    public ResponseEntity<ApiResponse<AuthenticationResponse>> register(
+    public ResponseEntity<ApiResponse<Void>> register(
             @Valid @RequestBody RegisterRequest request,
             HttpServletRequest httpRequest) {
-        
+
         String ipAddress = extractClientIpAddress(httpRequest);
         log.info("Registration request received for username: {} from IP: {}", request.getUsername(), ipAddress);
-        
-        AuthenticationResponse response = authService.register(request, ipAddress);
-        
-        log.info("User registered successfully: {}", request.getUsername());
+
+        authService.register(request, ipAddress);
+
+        log.info("Registration pending email verification: {}", request.getUsername());
         return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("User registered successfully", response));
+                .status(HttpStatus.ACCEPTED)
+                .body(ApiResponse.success(
+                        "Account created. Please check your email for a verification code.", null));
     }
     
     /**
@@ -264,6 +286,120 @@ public class AuthController {
         }
     }
     
+    // =========================================================================
+    // Email verification endpoints
+    // =========================================================================
+
+    /**
+     * Send (or re-send) an email-verification OTP.
+     * Safe to call again after signup if the user never received / lost the code.
+     */
+    @PostMapping("/email/send-verification")
+    @Operation(
+        summary = "Send email verification OTP",
+        description = "Sends a 6-digit OTP to the registered email address. " +
+                      "Rate-limited: only one active OTP is allowed at a time."
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", description = "Verification email sent"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404", description = "No account found for that email"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "409", description = "Email is already verified"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "429", description = "OTP already sent — please wait before requesting again")
+    })
+    public ResponseEntity<ApiResponse<Void>> sendEmailVerification(
+            @Valid @RequestBody SendVerificationEmailRequest request) {
+
+        log.info("Send email verification request for: {}", request.getEmail());
+        authService.sendEmailVerification(request);
+        return ResponseEntity.ok(
+                ApiResponse.success("Verification email sent. Please check your inbox.", null));
+    }
+
+    /**
+     * Confirm email ownership by submitting the OTP from the verification email.
+     * On success the account is activated (PENDING → ACTIVE) and JWT tokens are returned.
+     */
+    @PostMapping("/email/verify")
+    @Operation(
+        summary = "Verify email with OTP",
+        description = "Submit the 6-digit OTP that was emailed to confirm ownership of the address. " +
+                      "Activates the account and returns JWT tokens so the user can enter the app immediately."
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", description = "Email verified — account activated, tokens returned"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400", description = "Invalid or expired OTP"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404", description = "No account found for that email"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "409", description = "Email is already verified")
+    })
+    public ResponseEntity<ApiResponse<AuthenticationResponse>> verifyEmail(
+            @Valid @RequestBody VerifyEmailRequest request) {
+
+        log.info("Email verification submission for: {}", request.getEmail());
+        AuthenticationResponse response = authService.verifyEmail(request);
+        return ResponseEntity.ok(ApiResponse.success("Email verified. Welcome to Ziboto!", response));
+    }
+
+    // =========================================================================
+    // Forgot / reset password endpoints
+    // =========================================================================
+
+    /**
+     * Initiate a password-reset flow.
+     * Always returns 200 to prevent user enumeration.
+     */
+    @PostMapping("/password/forgot")
+    @Operation(
+        summary = "Forgot password — request reset OTP",
+        description = "Sends a 6-digit password-reset OTP to the registered email address. " +
+                      "Always returns 200 regardless of whether the account exists."
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", description = "Reset email dispatched (if account exists)")
+    })
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+
+        log.info("Forgot password request for email: {}", request.getEmail());
+        authService.forgotPassword(request);
+        return ResponseEntity.ok(ApiResponse.success(
+                "If an account exists for that email, a reset code has been sent.", null));
+    }
+
+    /**
+     * Complete the password-reset flow using the OTP from the reset email.
+     */
+    @PostMapping("/password/reset")
+    @Operation(
+        summary = "Reset password with OTP",
+        description = "Provide the 6-digit OTP and a new password to complete the reset. " +
+                      "All existing sessions are revoked on success."
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", description = "Password reset successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400", description = "Invalid or expired OTP"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404", description = "No account found for that email")
+    })
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+
+        log.info("Password reset submission for: {}", request.getEmail());
+        authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Password reset successfully. Please log in with your new password.", null));
+    }
+
     /**
      * Extract JWT token from Authorization header.
      * 

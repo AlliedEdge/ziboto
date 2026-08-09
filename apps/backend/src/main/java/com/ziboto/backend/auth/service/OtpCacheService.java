@@ -1,15 +1,17 @@
 package com.ziboto.backend.auth.service;
 
-import com.ziboto.backend.cache.RedisService;
-import com.ziboto.backend.config.properties.RedisProperties;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.springframework.stereotype.Service;
+
+import com.ziboto.backend.cache.RedisService;
+import com.ziboto.backend.config.properties.RedisProperties;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * OTP (One-Time Password) cache service using Redis.
@@ -277,12 +279,14 @@ public class OtpCacheService {
      */
     private boolean isGenerationRateLimited(String identifier, OtpPurpose purpose) {
         String rateLimitKey = buildRateLimitKey(identifier, purpose);
-        Long attempts = (Long) redisService.get(rateLimitKey);
-        
-        if (attempts == null) {
+        Object raw = redisService.get(rateLimitKey);
+
+        if (raw == null) {
             return false;
         }
-        
+
+        // Redis/Jackson may deserialize the counter as Integer or Long depending on value size
+        long attempts = ((Number) raw).longValue();
         return attempts >= redisProperties.getOtp().getMaxAttempts();
     }
     
@@ -295,13 +299,14 @@ public class OtpCacheService {
      */
     public int getRemainingGenerationAttempts(String identifier, OtpPurpose purpose) {
         String rateLimitKey = buildRateLimitKey(identifier, purpose);
-        Long attempts = (Long) redisService.get(rateLimitKey);
-        
-        if (attempts == null) {
+        Object raw = redisService.get(rateLimitKey);
+
+        if (raw == null) {
             return redisProperties.getOtp().getMaxAttempts();
         }
-        
-        return Math.max(0, redisProperties.getOtp().getMaxAttempts() - attempts.intValue());
+
+        long attempts = ((Number) raw).longValue();
+        return Math.max(0, (int) (redisProperties.getOtp().getMaxAttempts() - attempts));
     }
     
     /**

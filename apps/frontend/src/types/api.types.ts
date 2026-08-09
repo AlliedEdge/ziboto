@@ -30,15 +30,21 @@ export interface ForgotPasswordRequestDto {
 }
 
 export interface ResetPasswordRequestDto {
-  token: string;
+  email: string;
+  otp: string;
   newPassword: string;
 }
 
 export interface VerifyEmailRequestDto {
-  token: string;
+  email: string;
+  otp: string;
 }
 
 export interface ResendVerificationRequestDto {
+  email: string;
+}
+
+export interface SendVerificationEmailRequestDto {
   email: string;
 }
 
@@ -91,6 +97,7 @@ export interface UserProfileResponseDto extends UserDto {
 export interface ApiErrorResponse {
   message: string;
   error?: string;
+  errorCode?: string;
   statusCode: number;
   timestamp?: string;
   path?: string;

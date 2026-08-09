@@ -103,6 +103,16 @@ export const normalizeError = (error: unknown): ApiError => {
 };
 
 /**
+ * Extract the backend errorCode string from an API error response.
+ * Returns null if not present (e.g. network errors or non-BaseException responses).
+ */
+export const extractErrorCode = (error: unknown): string | null => {
+  if (!isAxiosError(error)) return null;
+  const data = (error as AxiosError<ApiErrorResponse>).response?.data;
+  return data?.errorCode ?? null;
+};
+
+/**
  * Check if error is an Axios error
  */
 export const isAxiosError = (error: unknown): error is AxiosError => {

@@ -86,11 +86,21 @@ const Register = () => {
         email: data.email,
         password: data.password,
       });
-      // Navigate to initialization page to load required data
-      navigate('/initializing', { replace: true });
-    } catch (error) {
+      // Navigate to email verification page so the user can confirm their address
+      navigate('/verify-email-pending', { replace: true, state: { email: data.email } });
+    } catch (error: any) {
       console.error('Registration failed:', error);
-      // Error is handled by the store
+      // If the backend says a verification is already in progress for this email,
+      // navigate to the verify page anyway — the user just needs to check their inbox.
+      const msg: string = error?.message ?? '';
+      if (
+        error?.status === 409 &&
+        msg.toLowerCase().includes('verification email was already sent')
+      ) {
+        navigate('/verify-email-pending', { replace: true, state: { email: data.email } });
+        return;
+      }
+      // All other errors are handled by the store (displayed in the form)
     } finally {
       setIsLoading(false);
     }
