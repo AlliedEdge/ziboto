@@ -155,7 +155,17 @@ coverage/
 # ============================================
 # Storage & Uploads
 # ============================================
-storage/
+
+# Ignore everything inside storage
+storage/**
+
+# Keep the storage folders
+!storage/**/
+
+# Keep .gitkeep files so Git can preserve the folders
+!storage/**/.gitkeep
+
+# Other upload directories
 uploads/
 public/uploads/
 static/uploads/
