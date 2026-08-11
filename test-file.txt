@@ -1,0 +1,12 @@
+This is a test file for S3 upload.
+Created on: August 11, 2026
+Testing Ziboto S3 integration.
+
+Features being tested:
+- File upload to AWS S3
+- Streaming upload (no full file in memory)
+- Secure key generation
+- AES256 encryption
+- Metadata tagging
+
+If you can read this, the S3 integration works!
