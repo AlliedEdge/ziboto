@@ -1,76 +1,286 @@
 services:
+  # PostgreSQL Database
   postgres:
     image: postgres:17
+    container_name: ziboto-postgres
     restart: unless-stopped
-
     environment:
       POSTGRES_DB: ziboto
       POSTGRES_USER: ziboto
       POSTGRES_PASSWORD: ziboto123
-
     ports:
       - "5433:5432"
-
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ziboto"]
       interval: 10s
       timeout: 5s
       retries: 5
-
     networks:
       - ziboto-network
 
+  # Redis Cache
   redis:
-    image: redis:7.4
+    image: redis:7.4-alpine
+    container_name: ziboto-redis
     restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ""
     ports:
-    - "6380:6379"
-    command: redis-server --appendonly yes
-
-
+      - "6380:6379"
     volumes:
       - redis_data:/data
-
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - ziboto-network
 
-  pgadmin:
-    image: dpage/pgadmin4
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: ziboto-rabbitmq
     restart: unless-stopped
-
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@ziboto.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
-
+      RABBITMQ_DEFAULT_USER: ziboto
+      RABBITMQ_DEFAULT_PASS: ziboto123
+      RABBITMQ_DEFAULT_VHOST: /
     ports:
-      - "5050:80"
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ziboto-network
 
+  # Elasticsearch Search Engine (optional - enable with --profile search)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: ziboto-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - bootstrap.memory_lock=true
+      - http.max_content_length=100mb
+      - indices.query.bool.max_clause_count=10000
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    networks:
+      - ziboto-network
+    profiles:
+      - search
+
+  # Backend API (Spring Boot)
+  backend:
+    build:
+      context: ../../apps/backend
+      dockerfile: Dockerfile
+    container_name: ziboto-backend
+    restart: unless-stopped
+    environment:
+      # Spring
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8080
+      
+      # Database
+      DATABASE_URL: jdbc:postgresql://postgres:5432/ziboto
+      DATABASE_USERNAME: ziboto
+      DATABASE_PASSWORD: ziboto123
+      DATABASE_POOL_SIZE: 20
+      
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      REDIS_DATABASE: 0
+      
+      # RabbitMQ
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ziboto
+      RABBITMQ_PASSWORD: ziboto123
+      
+      # Elasticsearch
+      ELASTICSEARCH_URIS: http://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: ""
+      ELASTICSEARCH_PASSWORD: ""
+      
+      # Elasticsearch Feature Toggle
+      APP_ELASTICSEARCH_ENABLED: false
+      
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-HJYuXxKYFT4euP13F4LSLpOy04amKn02lRdtlM4eDr2SmdPa6Sd7rlooTOzeBqDVRobztLHBBhrazss0kzXerA==}
+      JWT_EXPIRATION: 900000
+      JWT_REFRESH_EXPIRATION: 604800000
+      
+      # CORS
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost
+      
+      # Storage
+      # STORAGE_TYPE: local
+      STORAGE_TYPE: s3
+      
+      # AWS S3
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-ziboto-files-277522752099-eu-north-1-an}
+      AWS_REGION: ${AWS_REGION:-eu-north-1}
+      AWS_S3_MULTIPART_THRESHOLD: 104857600
+      AWS_S3_PRESIGNED_URL_EXPIRATION: 15
+      AWS_S3_ENABLE_ENCRYPTION: true
+      
+      # AWS Credentials (use IAM roles in production)
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      
+      # File Upload
+      MAX_FILE_SIZE: 524288000
+      MAX_REQUEST_SIZE: 524288000
+      
+      # Email (Resend)
+      RESEND_API_KEY: ${RESEND_API_KEY:-your_resend_api_key_here}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-no-reply@alliededge.app}
+      RESEND_FROM_NAME: Ziboto
+      RESEND_VERIFICATION_URL: http://localhost:3000/verify-email
+      RESEND_RESET_URL: http://localhost:3000/reset-password
+      
+      # Logging
+      LOG_LEVEL: INFO
+    ports:
+      - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      # elasticsearch:
+      #   condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks:
+      - ziboto-network
+    volumes:
+      - backend_logs:/app/logs
+      - backend_storage:/app/storage
 
+  # Frontend (React + Vite)
+  frontend:
+    build:
+      context: ../../apps/frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080/api/v1}
+    container_name: ziboto-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
       - ziboto-network
 
-  redisinsight:
-    image: redis/redisinsight
+  # Nginx Reverse Proxy (optional - enable with --profile proxy for unified access)
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: ziboto-nginx
     restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - backend
+      - frontend
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - ziboto-network
+    profiles:
+      - proxy
 
+  # PgAdmin (Development only)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: ziboto-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@ziboto.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ziboto-network
+    profiles:
+      - dev
+
+  # RedisInsight (Development only)
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: ziboto-redisinsight
+    restart: unless-stopped
     ports:
       - "5540:5540"
-
     depends_on:
       - redis
-
     networks:
       - ziboto-network
+    profiles:
+      - dev
 
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  backend_logs:
+    driver: local
+  backend_storage:
+    driver: local
 
 networks:
   ziboto-network:
+    driver: bridge

@@ -1,0 +1,48 @@
+# Maven
+target/
+!target/*.jar
+.mvn/
+mvnw
+mvnw.cmd
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+CHANGELOG.md
+*.md
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Scripts
+run-dev.sh
+run-with-env.sh
+RUN_ME.sh
+scripts/
+
+# Nginx
+nginx/
+
+# Tests
+src/test/
