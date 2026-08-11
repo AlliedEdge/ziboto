@@ -1,0 +1,15 @@
+package com.ziboto.backend.notification.enums;
+
+public enum NotificationType {
+    FILE_SHARED,
+    FILE_UPLOADED,
+    FILE_DELETED,
+    SHARE_ACCEPTED,
+    SHARE_DECLINED,
+    STORAGE_QUOTA_WARNING,
+    STORAGE_QUOTA_EXCEEDED,
+    DUPLICATE_DETECTED,
+    VERSION_CREATED,
+    SYSTEM_ANNOUNCEMENT,
+    SECURITY_ALERT
+}
