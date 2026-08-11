@@ -104,22 +104,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   /**
    * Handle session expiration
+   * Currently disabled for development
    */
-  const handleSessionExpired = useCallback(async () => {
-    console.log('Session expired, logging out...');
-    
-    // Clear tokens
-    tokenService.clearTokens();
-    
-    // Logout from store
-    await storeLogout();
-    
-    // Redirect to session expired page
-    navigate('/session-expired', { 
-      replace: true,
-      state: { from: window.location.pathname }
-    });
-  }, [storeLogout, navigate]);
+  // const handleSessionExpired = useCallback(async () => {
+  //   console.log('Session expired, logging out...');
+  //   
+  //   // Clear tokens
+  //   tokenService.clearTokens();
+  //   
+  //   // Logout from store
+  //   await storeLogout();
+  //   
+  //   // Redirect to session expired page
+  //   navigate('/session-expired', { 
+  //     replace: true,
+  //     state: { from: window.location.pathname }
+  //   });
+  // }, [storeLogout, navigate]);
 
   /**
    * Logout wrapper with navigation
