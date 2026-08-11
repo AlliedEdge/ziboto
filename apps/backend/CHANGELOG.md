@@ -2,7 +2,109 @@
 
 All notable changes to the Ziboto Backend application are documented here.
 
-## [Unreleased]
+## [3.0.0] - 2026-08-12
+
+### Added - V3: User Experience Enhancement
+- **Activity Feed System**
+  - ActivityLog entity with 23 activity types
+  - ActivityService with async logging
+  - ActivityController with 8 REST endpoints
+  - Database migration V17 with activity tracking
+  - Activity summaries and statistics
+  - Scheduled cleanup of old activities (90+ days)
+
+- **Real-Time Collaboration** (WebSocket - temporarily disabled pending dependency setup)
+  - WebSocket configuration with STOMP protocol
+  - WebSocketService for real-time notifications
+  - WebSocketController for connection management
+  - JWT authentication for WebSocket connections
+  - SockJS fallback support
+  - Message types for file events and user status
+
+- **File Commenting System**
+  - FileComment entity with threading support
+  - CommentService with CRUD operations
+  - CommentController with 6 REST endpoints
+  - Database migration V18 with comments table
+  - Support for mentions (@user)
+  - Edit tracking and reply counting
+
+- **Trash Bin Feature**
+  - TrashService with soft delete functionality
+  - TrashController with 6 REST endpoints
+  - Database migration V19 adding deleted_at/deleted_by columns
+  - 30-day retention policy
+  - Scheduled auto-cleanup task (@Scheduled daily at 2 AM)
+  - Restore functionality for files and folders
+
+- **Storage Analytics**
+  - AnalyticsService using JdbcTemplate
+  - AnalyticsController with 2 REST endpoints
+  - Database migration V20 with storage_usage_history table
+  - Storage overview dashboard
+  - File type breakdown analysis
+  - Usage trends over time
+  - Most accessed files tracking
+
+- **Public Galleries**
+  - Gallery and GalleryFile entities
+  - GalleryService with full CRUD operations
+  - GalleryController with 9 REST endpoints
+  - Database migration V21 with galleries tables
+  - Multiple themes (default, dark, light, minimal, vibrant)
+  - Multiple layouts (grid, masonry, slideshow, list)
+  - Password protection support
+  - View count tracking
+  - Unique slug generation
+
+- **File Preview System**
+  - FilePreview entity for caching
+  - PreviewType enum (THUMBNAIL, IMAGE, PDF, VIDEO, AUDIO, DOCUMENT, CODE)
+  - PreviewStatus enum (PENDING, PROCESSING, COMPLETED, FAILED, NOT_SUPPORTED)
+  - Database migration V22 with file_previews table
+  - Preview expiration and cleanup
+  - FilePreviewRepository with preview queries
+
+### Changed
+- Enhanced FileMetadata entity with new fields:
+  - s3Key, contentType, thumbnailUrl, previewUrl, deletedBy
+  - Added getFilename(), getFileName(), getS3Key(), getContentType() methods
+- Updated User entity with getProfilePicture() alias method
+- Enhanced ErrorCode with UNAUTHORIZED and DUPLICATE_RESOURCE constants
+- Fixed FolderRepository with both Page and List method variants
+- Fixed FileMetadataRepository duplicate method issues
+- Fixed TrashService imports (corrected package paths)
+
+### Database Migrations
+- V17: Activity logs with comprehensive activity tracking
+- V18: File comments with threading and mentions
+- V19: Trash bin with soft delete columns
+- V20: Storage analytics and usage history
+- V21: Public galleries with multiple features
+- V22: File preview system with caching
+
+### Fixed
+- Resolved 100+ compilation errors from V3 implementation
+- Fixed Lombok annotation issues across entities
+- Corrected repository method signatures
+- Fixed entity field access issues
+
+## [2.0.0] - 2026-08-09
+
+### Added - V2: Feature Maturity
+- Email verification system
+- Google OAuth integration
+- File sharing with expirable/password-protected links
+- File versioning and history
+- Elasticsearch full-text search
+- Duplicate detection (SHA-256)
+- RabbitMQ background processing
+- Comprehensive audit logging
+- Role-based access control (RBAC)
+- Notification system
+- Database migrations V8-V16
+
+## [Unreleased] - Previously Documented
 
 ### Added
 - File management REST API with FileController
@@ -14,118 +116,33 @@ All notable changes to the Ziboto Backend application are documented here.
 - File and folder DTOs (FileMetadataResponse, FileUploadResponse, FolderRequest, FolderResponse)
 - Folder entity with hierarchical structure support
 - FolderRepository for database operations
-- Database migrations: V8__Create_folders_table.sql and V9__Create_file_metadata_table.sql
 - DotenvConfig for .env file support
 - PowerShell version of JWT secret generation script
-- META-INF resources directory
-- Static resources directory
 
 ### Changed
-- Updated pom.xml dependencies (version updates and optimizations)
-- Modified application.yml for production readiness:
-  - Changed JPA DDL auto mode from validate to update
-  - Added serverTimezone property for database connections
-  - Set default JWT secret with fallback
-  - Updated storage configuration to use local storage for Version 1
-  - Reduced local storage base path to ./storage
-  - Added file size limits (500MB default)
-  - Increased refresh token rate limit to 1000 requests/hour
-- Updated BackendApplication to set default timezone to UTC
-- Enhanced FileMetadata entity with improved field mapping
-- Updated FileMetadataRepository with additional query methods
-- Refined GlobalExceptionHandler for better error responses
-- Improved AuthServiceImpl for enhanced authentication logic
-- Updated RateLimitService for better rate limiting
-- Enhanced StorageUsageServiceImpl for accurate storage tracking
-
-### Removed
-- AUTHENTICATED_USER_API_IMPLEMENTATION.md
-- HOW_TO_RUN.md
-- JWT_FIX_SUMMARY.md
-- PROFILE_MANAGEMENT_IMPLEMENTATION.md
-- QUICK_FIX.md
-- REDIS_IMPLEMENTATION_COMPLETE.md
-- REDIS_VERIFICATION_CHECKLIST.md
-- SECURITY_IMPLEMENTATION_SUMMARY.md
-- START_HERE.txt
-- STORAGE_USAGE_IMPLEMENTATION.md
-- USER_MODULE_IMPLEMENTATION.md
-- docker-compose.yml (moved to infra)
-- docs/ directory (implementation guides removed, moved to centralized docs)
-
----
+- Updated pom.xml dependencies
+- Modified application.yml for production readiness
+- Enhanced authentication and authorization logic
+- Improved error handling and validation
 
 ## [0.2.0] - 2026-08-05
 
-### Added
+### Added - V1: MVP
 - Complete Spring Boot application structure
 - JWT authentication and authorization system
 - User registration and login REST APIs
 - Refresh token mechanism with rotation
 - Redis integration for caching and session management
-- Audit logging system (AuditLog entity, repository, and service)
-- User management module:
-  - User entity with roles and status
-  - UserController with profile and storage endpoints
-  - UserService and UserServiceImpl
-  - UserRepository with custom queries
-  - User DTOs and mappers
-- Authentication module:
-  - AuthController with login, register, refresh, logout, verify endpoints
-  - AuthService and AuthServiceImpl with comprehensive security features
-  - RefreshToken entity and repository
-  - CustomUserDetailsService for Spring Security integration
-  - Token blacklist service
-  - Session cache service
-  - OTP cache service
-  - Failed login attempt tracking
-  - Rate limiting service
-  - Registration service
-- File storage module (initial):
-  - FileMetadata entity
-  - FileMetadataRepository
-  - FileStorageService and LocalFileStorageService
-- Security configuration:
-  - SecurityConfig with JWT filter chain
-  - JwtTokenProvider for token generation and validation
-  - JwtAuthenticationFilter for request interception
-  - JwtAuthenticationEntryPoint for unauthorized access handling
-  - SecurityHeadersFilter for HTTP security headers
-  - JwtProperties configuration
-- Common utilities:
-  - BaseEntity for auditing fields
-  - ApiResponse and PageResponse DTOs
-  - ErrorCode constants
-  - ValidationMessages constants
-  - SecurityUtils
-- Exception handling:
-  - GlobalExceptionHandler
-  - Custom exception classes (ResourceNotFoundException, UnauthorizedException, etc.)
-- Configuration:
-  - CorsConfig for cross-origin requests
-  - WebConfig for web-specific settings
-  - JpaConfig for JPA configuration
-  - LoggingConfig for structured logging
-  - OpenApiConfig for Swagger documentation
-  - AppProperties and RedisProperties
-  - RedisConfig and RedisService
-- Flyway database migrations:
-  - V1__Create_users_table.sql
-  - V2__Create_buckets_table.sql
-  - V3__Create_file_metadata_table.sql
-  - V4__Create_audit_logs_table.sql
-  - V5__Add_last_login_at_to_users.sql
-  - V6__Create_refresh_tokens_table.sql
-- Maven configuration (pom.xml) with all dependencies
-- Application configuration (application.yml, application-dev.yml, application-prod.yml)
-- Shell scripts for development (run-dev.sh, run-with-env.sh, RUN_ME.sh)
-- JWT secret generation script
-- Nginx reverse proxy configuration
-- Testing utilities and scripts
-- Unit tests (BackendApplicationTests, RegistrationServiceImplTest)
-- .env.example for environment variables
-- Maven wrapper (mvnw, mvnw.cmd)
-- README with setup and usage instructions
+- Audit logging system
+- User management module
+- Authentication module with comprehensive security
+- File storage module (initial)
+- Security configuration
+- Common utilities and exception handling
+- Flyway database migrations V1-V7
+- Maven configuration with all dependencies
+- Application configuration files
+- Development and deployment scripts
 
 ### Security
 - JWT authentication with configurable expiration
@@ -137,12 +154,27 @@ All notable changes to the Ziboto Backend application are documented here.
 - Account lockout mechanism
 - Token blacklist for logout
 - Session management with Redis
-- Security headers (X-Frame-Options, CSP, etc.)
+- Security headers
 
 ---
 
-## [0.0.1] - 2026-08-01
+## Versioning Strategy
 
-### Added
-- Initial backend project setup
-- Basic project structure placeholder
+- **v1**: MVP with core storage functionality
+- **v2**: Feature maturity (sharing, versioning, search, notifications)
+- **v3**: User experience (activity, comments, analytics, galleries, previews)
+- **v4**: Cloud-native infrastructure (Kubernetes, Terraform)
+- **v5**: Intelligence & mobile (AI, mobile apps, collaboration)
+
+## Technology Stack
+
+- Java 21
+- Spring Boot 3.x
+- Spring Security
+- Spring Data JPA
+- PostgreSQL 15+
+- Redis 7+
+- RabbitMQ 3.x
+- AWS S3
+- Elasticsearch 8.x (disabled by user)
+- Docker & Docker Compose

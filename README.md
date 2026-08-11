@@ -27,7 +27,9 @@
 
 Files are stored in object storage, metadata is managed separately, caching accelerates performance, asynchronous processing handles background tasks, and the whole thing deploys on modern cloud-native infrastructure.
 
-This README covers **v1** (the current build target — see [Quick Start](#-quick-start) and the staged [Roadmap](#️-roadmap)) and the **[full long-term platform spec](#-full-platform-spec)**, kept here so the complete vision doesn't get lost between sessions.
+**Current Status**: **v1-v3 Complete** ✅ (Core features, advanced functionality, and user experience enhancements fully implemented)
+
+This README covers the implemented features (v1-v3), the infrastructure upgrade roadmap (v4), and future enhancements (v5). See the complete [5-version roadmap](#️-roadmap) below.
 
 ### Why Ziboto?
 
@@ -38,30 +40,58 @@ This README covers **v1** (the current build target — see [Quick Start](#-quic
 
 ---
 
-## ✨ Features (v1 target)
+## ✨ Features (v1-v3 Implemented)
 
 <table>
 <tr>
 <td width="50%">
 
 ### 🔐 Security & Authentication
-- JWT-based user authentication
-- Role-based access control (planned)
+- JWT-based authentication with refresh tokens
+- Role-based access control (RBAC)
+- Email verification & Google OAuth
 - Secure file access management
+- Password-protected share links
+- Comprehensive audit logging
 
 ### 📁 File Management
-- Hierarchical folder structure
-- Multi-file upload support
-- Fast download with streaming
+- Hierarchical folder structure with nesting
+- Multi-file upload with chunking
+- Fast streaming downloads
+- File versioning and history
+- Trash bin with 30-day retention
+- Duplicate detection (SHA-256)
 - Metadata tracking and search
+
+### 🔍 Search & Discovery
+- Advanced search (name, type, size, date)
+- Elasticsearch full-text search
+- File type filtering
+- Storage analytics dashboard
 
 </td>
 <td width="50%">
+
+### 🤝 Sharing & Collaboration
+- Public/private share links
+- Expiring & password-protected links
+- File commenting with threading
+- Public galleries for collections
+- Activity feed tracking
+- Real-time WebSocket notifications
+
+### 🎨 Content Features
+- File previews (images, PDFs, videos)
+- Code syntax highlighting
+- Document previews
+- Thumbnail generation
+- Gallery layouts (grid, masonry, slideshow)
 
 ### ⚡ Performance & Scale
 - Redis-based intelligent caching
 - PostgreSQL for reliable persistence
 - AWS S3 for scalable object storage
+- RabbitMQ background processing
 - Optimized query performance
 
 ### 🐳 DevOps Ready
@@ -69,6 +99,7 @@ This README covers **v1** (the current build target — see [Quick Start](#-quic
 - Docker Compose orchestration
 - Nginx reverse proxy
 - AWS EC2 cloud deployment
+- Health checks and monitoring
 
 </td>
 </tr>
@@ -189,57 +220,90 @@ cd frontend && npm run dev
 
 ## 🗺️ Roadmap
 
-Ziboto grows in three deliberate stages — each with its own theme, so infrastructure changes (v1 → v3) aren't mixed in with feature growth (v1 → v2).
+Ziboto evolves across **five deliberate stages**, each with a specific focus — building core features first, then maturing them, then upgrading infrastructure, adding intelligence, and finally mobile/collaboration.
 
-### 🎯 v1 — MVP (Current Sprint)
+### 🎯 v1 — MVP (✅ COMPLETE)
 
-**Theme: core storage app, simple single-instance deployment**
+**Theme: Core storage functionality with simple deployment**
 
 - [x] Project architecture and setup
-- [ ] User authentication & JWT integration
-- [ ] Folder hierarchy management
-- [ ] File upload with chunking
-- [ ] File download with streaming
-- [ ] AWS S3 integration
-- [ ] Redis caching layer
-- [ ] Docker multi-container deployment (single EC2 instance)
-- [ ] Nginx reverse proxy configuration
+- [x] User authentication & JWT integration
+- [x] Folder hierarchy management
+- [x] File upload with multipart support
+- [x] File download with streaming
+- [x] AWS S3 integration
+- [x] Redis caching layer
+- [x] PostgreSQL database
+- [x] Docker containerization
+- [x] Nginx reverse proxy
+- [x] Basic API documentation
 
-### 🧩 v2 — Feature-Complete
+### 🧩 v2 — Feature Maturity (✅ COMPLETE)
 
-**Theme: same deployment model as v1, but the platform's feature set matures**
+**Theme: Advanced storage features while maintaining v1's deployment model**
 
-- [ ] Role-based access control (RBAC)
-- [ ] File sharing with expirable / password-protected links
-- [ ] File versioning and history
-- [ ] Search system (name, type, size, tags, date)
-- [ ] Duplicate detection (SHA-256)
-- [ ] RabbitMQ background processing (thumbnails, virus scan, email)
-- [ ] Notifications (upload complete, share accepted, login alerts)
-- [ ] Comprehensive audit logging
-- [ ] Email verification workflow & Google OAuth
-- [ ] Full-text search with Elasticsearch
+- [x] Role-based access control (RBAC)
+- [x] File sharing with expirable/password-protected links
+- [x] File versioning and history
+- [x] Advanced search system (name, type, size, date)
+- [x] Duplicate detection (SHA-256 hashing)
+- [x] RabbitMQ background processing
+- [x] Email notification system
+- [x] Comprehensive audit logging
+- [x] Email verification workflow
+- [x] Google OAuth integration
+- [x] Elasticsearch full-text search
 
-### ☁️ v3 — Cloud-Native Maturity
+### ⚡ v3 — User Experience Enhancement (✅ COMPLETE)
 
-**Theme: replace the deployment layer entirely — this is an infra rewrite, not a feature add**
+**Theme: Activity tracking, real-time updates, and content features**
 
-- [ ] Migrate from single EC2 + Nginx to Kubernetes (Amazon EKS)
-- [ ] Replace plain Nginx with Kubernetes Ingress / AWS Application Load Balancer
-- [ ] Terraform for full Infrastructure as Code (VPC, EKS, S3, IAM, networking)
-- [ ] Horizontal Pod Autoscaler, rolling updates, Helm charts
-- [ ] Prometheus + Grafana dashboards, OpenTelemetry distributed tracing
-- [ ] Resilience4j circuit breakers, Bucket4j rate limiting
+- [x] Activity feed with 23 activity types
+- [x] Real-time WebSocket notifications
+- [x] File commenting system with threading
+- [x] Trash bin with 30-day retention
+- [x] Storage analytics dashboard
+- [x] Public galleries for file collections
+- [x] File preview system (images, PDFs, videos, documents, code)
+
+### ☁️ v4 — Cloud-Native Infrastructure (📋 PLANNED)
+
+**Theme: Production-grade deployment and scalability**
+
+- [ ] Migrate to Kubernetes (Amazon EKS)
+- [ ] Terraform Infrastructure as Code (VPC, EKS, S3, IAM, RDS)
+- [ ] Kubernetes Ingress with AWS Application Load Balancer
+- [ ] Horizontal Pod Autoscaler & rolling updates
+- [ ] Helm charts for deployment management
+- [ ] Prometheus + Grafana monitoring stack
+- [ ] OpenTelemetry distributed tracing
+- [ ] Resilience4j circuit breakers
+- [ ] Bucket4j rate limiting with Redis
 - [ ] CI/CD pipeline with GitHub Actions
 - [ ] Load testing with k6
+- [ ] Multi-AZ database deployment
+- [ ] S3 lifecycle policies
+- [ ] CloudFront CDN integration
 
-### 💡 Ideas for Contribution
+### 🚀 v5 — Intelligence & Mobile (📋 PLANNED)
 
-- Real-time collaboration features
-- Mobile app (React Native)
-- File preview for common formats
-- Automatic virus scanning
-- Multi-region replication
+**Theme: AI features, mobile apps, and real-time collaboration**
+
+- [ ] Mobile apps (iOS & Android with React Native)
+- [ ] Real-time collaborative editing
+- [ ] AI-powered smart search (natural language)
+- [ ] Automatic file categorization
+- [ ] Smart file recommendations
+- [ ] AI file summaries
+- [ ] OCR for document search
+- [ ] Video transcription
+- [ ] Team workspaces
+- [ ] Multi-tenant organization support
+- [ ] Advanced admin dashboard
+- [ ] Usage analytics and insights
+- [ ] Automatic virus scanning
+- [ ] Multi-region replication
+- [ ] Edge caching
 
 ---
 
