@@ -23,6 +23,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+import org.mockito.ArgumentCaptor;
+
 @ExtendWith(MockitoExtension.class)
 class RegistrationServiceImplTest {
     
@@ -160,6 +162,10 @@ class RegistrationServiceImplTest {
         
         // Assert
         verify(passwordEncoder).encode("Password123");
-        verify(user).setPassword("encodedPassword");
+        
+        // Use ArgumentCaptor to verify the password was set correctly
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertEquals("encodedPassword", userCaptor.getValue().getPassword());
     }
 }
