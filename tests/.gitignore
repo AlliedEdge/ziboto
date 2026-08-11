@@ -1,0 +1,40 @@
+# ============================================
+# Tests Directory - .gitignore
+# ============================================
+
+# Test results
+results/
+reports/
+test-results/
+coverage/
+allure-results/
+
+# k6 outputs
+*.json
+summary.txt
+*.html
+
+# Test data (generated)
+test-data/
+*.test.db
+*.test.sqlite
+
+# Logs
+*.log
+logs/
+
+# Environment files for testing
+.env.test
+.env.local
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Keep example configs
+!example-*
+!*.example.*

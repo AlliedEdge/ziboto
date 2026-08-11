@@ -1,0 +1,52 @@
+# ============================================
+# Terraform Infrastructure - .gitignore
+# ============================================
+
+# Terraform state files (NEVER commit)
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Terraform directory
+.terraform/
+.terraform.lock.hcl
+
+# Terraform variables with secrets
+*.tfvars
+!example.tfvars
+!terraform.tfvars.example
+
+# Terraform plan files
+*.tfplan
+tfplan
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI configuration files
+.terraformrc
+terraform.rc
+
+# Terraform modules
+.terraform.modules/
+
+# Sensitive output
+sensitive/
+secrets/
+
+# SSH keys
+*.pem
+*.key
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup

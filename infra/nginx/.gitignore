@@ -1,0 +1,37 @@
+# ============================================
+# Nginx Infrastructure - .gitignore
+# ============================================
+
+# SSL certificates (NEVER commit)
+*.crt
+*.key
+*.pem
+*.csr
+*.pfx
+*.p12
+ssl/
+certs/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Nginx runtime
+logs/
+*.log
+cache/
+*.pid
+*.lock
+
+# Temporary files
+*.tmp
+*.temp
+
+# Backup files
+*.backup
+*.bak
+
+# Local overrides
+*.local.conf
+local/
