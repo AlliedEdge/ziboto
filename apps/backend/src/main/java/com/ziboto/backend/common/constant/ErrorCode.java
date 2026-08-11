@@ -91,6 +91,8 @@ public enum ErrorCode {
     FILE_NAME_INVALID(4007, "Invalid file name", HttpStatus.BAD_REQUEST),
     FILE_ALREADY_EXISTS(4008, "File already exists", HttpStatus.CONFLICT),
     FILE_LOCKED(4009, "File is locked by another process", HttpStatus.CONFLICT),
+    DUPLICATE_RESOURCE(4010, "Duplicate resource", HttpStatus.CONFLICT),
+    UNAUTHORIZED(4011, "Unauthorized", HttpStatus.UNAUTHORIZED),
     
     // ==================== Bucket Errors (5000-5099) ====================
     

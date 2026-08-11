@@ -49,11 +49,23 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, UUID
      * Search files by name.
      */
     @Query("SELECT f FROM FileMetadata f WHERE f.userId = :userId " +
-           "AND (LOWER(f.fileName) LIKE LOWER(CONCAT('%', :query, '%')) " +
-           "OR LOWER(f.originalFileName) LIKE LOWER(CONCAT('%', :query, '%')))")
+           "AND LOWER(f.fileName) LIKE LOWER(CONCAT('%', :query, '%')) " +
+           "AND f.deletedAt IS NULL " +
+           "ORDER BY f.createdAt DESC")
     Page<FileMetadata> searchByFileName(@Param("userId") Long userId, 
-                                         @Param("query") String query, 
-                                         Pageable pageable);
+                                       @Param("query") String query, 
+                                       Pageable pageable);
+    
+    /**
+     * Find deleted files (in trash).
+     */
+    List<FileMetadata> findByUserIdAndDeletedAtIsNotNull(Long userId);
+    
+    /**
+     * Find files deleted before a certain date (for cleanup).
+     */
+    @Query("SELECT f FROM FileMetadata f WHERE f.deletedAt IS NOT NULL AND f.deletedAt < :cutoffDate")
+    List<FileMetadata> findByDeletedAtBefore(@Param("cutoffDate") java.time.LocalDateTime cutoffDate);
     
     /**
      * Get total storage used by user.

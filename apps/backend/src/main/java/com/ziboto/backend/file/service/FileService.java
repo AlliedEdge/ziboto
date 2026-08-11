@@ -8,12 +8,16 @@ import com.ziboto.backend.file.entity.FileMetadata;
 import com.ziboto.backend.file.entity.Folder;
 import com.ziboto.backend.file.repository.FileMetadataRepository;
 import com.ziboto.backend.file.repository.FolderRepository;
+import com.ziboto.backend.messaging.event.FileDeletedEvent;
+import com.ziboto.backend.messaging.event.FileUploadedEvent;
+import com.ziboto.backend.messaging.publisher.EventPublisher;
 import com.ziboto.backend.user.entity.User;
 import com.ziboto.backend.user.repository.UserRepository;
 import com.ziboto.backend.user.service.StorageUsageService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.io.OutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -37,7 +42,6 @@ import java.util.UUID;
  * Handles file upload, download, deletion, and metadata management.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class FileService {
     
@@ -46,6 +50,25 @@ public class FileService {
     private final UserRepository userRepository;
     private final StorageService storageService;
     private final StorageUsageService storageUsageService;
+    private final EventPublisher eventPublisher;
+    
+    @Autowired(required = false)
+    private com.ziboto.backend.search.service.FileSearchService fileSearchService;
+    
+    public FileService(
+            FileMetadataRepository fileMetadataRepository,
+            FolderRepository folderRepository,
+            UserRepository userRepository,
+            StorageService storageService,
+            StorageUsageService storageUsageService,
+            EventPublisher eventPublisher) {
+        this.fileMetadataRepository = fileMetadataRepository;
+        this.folderRepository = folderRepository;
+        this.userRepository = userRepository;
+        this.storageService = storageService;
+        this.storageUsageService = storageUsageService;
+        this.eventPublisher = eventPublisher;
+    }
     
     @Value("${app.storage.local.base-path:/var/ziboto/storage}")
     private String storagePath;
@@ -144,6 +167,36 @@ public class FileService {
             updateUserStorage(userId, file.getSize());
             
             log.info("File uploaded successfully - fileId: {}, storageKey: {}", savedMetadata.getId(), storageKey);
+            
+            // 13. Index file for search (V2 - Elasticsearch)
+            if (fileSearchService != null) {
+                try {
+                    fileSearchService.indexFile(savedMetadata);
+                } catch (Exception e) {
+                    log.error("Failed to index file for search - fileId: {}", savedMetadata.getId(), e);
+                    // Don't fail the upload if indexing fails
+                }
+            }
+            
+            // 14. Publish file uploaded event for async processing (V2)
+            try {
+                FileUploadedEvent event = FileUploadedEvent.builder()
+                        .fileId(savedMetadata.getId())
+                        .userId(userId)
+                        .filename(savedMetadata.getFileName())
+                        .storageKey(savedMetadata.getStorageKey())
+                        .sizeBytes(savedMetadata.getFileSize())
+                        .mimeType(savedMetadata.getMimeType())
+                        .sha256Hash(savedMetadata.getSha256Hash())
+                        .folderId(folderId)
+                        .timestamp(LocalDateTime.now())
+                        .build();
+                
+                eventPublisher.publishFileUploaded(event);
+            } catch (Exception e) {
+                log.error("Failed to publish file uploaded event - fileId: {}", savedMetadata.getId(), e);
+                // Don't fail the upload if event publishing fails
+            }
             
             return response;
             
@@ -264,6 +317,11 @@ public class FileService {
         FileMetadata metadata = fileMetadataRepository.findByIdAndUserId(fileId, userId)
                 .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND, "File not found"));
         
+        // Store values before deletion for event publishing
+        String filename = metadata.getFileName();
+        String storageKey = metadata.getStorageKey();
+        String sha256Hash = metadata.getSha256Hash();
+        
         // 2. Delete from storage
         storageService.deleteFile(metadata.getStorageKey());
         
@@ -274,6 +332,34 @@ public class FileService {
         updateUserStorage(userId, -metadata.getFileSize());
         
         log.info("File deleted successfully - fileId: {}", fileId);
+        
+        // 5. Remove from search index (V2 - Elasticsearch)
+        if (fileSearchService != null) {
+            try {
+                fileSearchService.deleteFromIndex(fileId);
+            } catch (Exception e) {
+                log.error("Failed to remove file from search index - fileId: {}", fileId, e);
+                // Don't fail the deletion if search index removal fails
+            }
+        }
+        
+        // 6. Publish file deleted event for cleanup tasks (V2)
+        try {
+            FileDeletedEvent event = FileDeletedEvent.builder()
+                    .fileId(fileId)
+                    .userId(userId)
+                    .filename(filename)
+                    .storageKey(storageKey)
+                    .sha256Hash(sha256Hash)
+                    .timestamp(LocalDateTime.now())
+                    .reason("User requested")
+                    .build();
+            
+            eventPublisher.publishFileDeleted(event);
+        } catch (Exception e) {
+            log.error("Failed to publish file deleted event - fileId: {}", fileId, e);
+            // Don't fail the deletion if event publishing fails
+        }
     }
     
     /**
