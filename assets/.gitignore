@@ -1,0 +1,22 @@
+# ============================================
+# Assets Directory - .gitignore
+# ============================================
+
+# Large binary files (use Git LFS if needed)
+*.psd
+*.ai
+*.sketch
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Keep source files
+!*.svg
+!*.png
+!*.jpg
+!*.jpeg

@@ -1,0 +1,34 @@
+# ============================================
+# Monitoring Infrastructure - .gitignore
+# ============================================
+
+# Prometheus data
+data/
+prometheus-data/
+alertmanager-data/
+
+# Grafana
+grafana-data/
+grafana.db
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Secrets
+*-secret.yaml
+*-secret.yml
+secrets/
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Config overrides (local only)
+*.local.yaml
+*.local.yml

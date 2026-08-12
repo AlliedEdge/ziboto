@@ -1,0 +1,35 @@
+# ============================================
+# Kubernetes Infrastructure - .gitignore
+# ============================================
+
+# Secrets (NEVER commit)
+*-secret.yaml
+*-secret.yml
+secrets/
+*.secret
+
+# Environment-specific configs (local only)
+*.local.yaml
+*.local.yml
+local/
+
+# Helm
+charts/*.tgz
+.helmignore
+
+# Kubeconfig
+kubeconfig
+*.kubeconfig
+.kube/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Generated manifests
+generated/
+
+# Terraform state (if mixing with k8s)
+*.tfstate
+*.tfstate.*
+.terraform/
