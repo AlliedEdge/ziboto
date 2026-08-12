@@ -158,7 +158,7 @@ services:
       MAX_REQUEST_SIZE: 524288000
       
       # Email (Resend)
-      RESEND_API_KEY: ${RESEND_API_KEY:}
+      RESEND_API_KEY: ${RESEND_API_KEY}
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-no-reply@alliededge.app}
       RESEND_FROM_NAME: Ziboto
       RESEND_VERIFICATION_URL: http://localhost:3000/verify-email
