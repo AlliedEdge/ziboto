@@ -84,6 +84,21 @@ public class FileMetadata {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
     
+    @Column(name = "deleted_by")
+    private String deletedBy;
+    
+    @Column(name = "s3_key", length = 500)
+    private String s3Key;
+    
+    @Column(name = "content_type", length = 100)
+    private String contentType;
+    
+    @Column(name = "thumbnail_url", length = 1000)
+    private String thumbnailUrl;
+    
+    @Column(name = "preview_url", length = 1000)
+    private String previewUrl;
+    
     @Column(name = "created_by")
     private String createdBy;
     
@@ -138,5 +153,33 @@ public class FileMetadata {
             return "";
         }
         return fileName.substring(fileName.lastIndexOf(".") + 1);
+    }
+    
+    /**
+     * Alias for fileName to support legacy code.
+     */
+    public String getFilename() {
+        return this.fileName;
+    }
+    
+    /**
+     * Get fileName (standard getter).
+     */
+    public String getFileName() {
+        return this.fileName;
+    }
+    
+    /**
+     * Get S3 key (alias for storageKey).
+     */
+    public String getS3Key() {
+        return this.s3Key != null ? this.s3Key : this.storageKey;
+    }
+    
+    /**
+     * Get content type (alias for mimeType).
+     */
+    public String getContentType() {
+        return this.contentType != null ? this.contentType : this.mimeType;
     }
 }

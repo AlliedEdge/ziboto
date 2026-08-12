@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { appInitService, type InitializationData } from '../services/appInitService';
 import { LoadingScreen } from '../components/ui';
-import Dashboard from './Dashboard';
 
 /**
  * Initialization states
@@ -50,7 +48,6 @@ const InitializingApp = () => {
   const { user, isAuthenticated, checkAuth } = useAuthStore();
   
   const [currentStep, setCurrentStep] = useState<InitStep>('verifying-auth');
-  const [initData, setInitData] = useState<InitializationData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

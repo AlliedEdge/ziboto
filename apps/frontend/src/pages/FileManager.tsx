@@ -6,14 +6,12 @@ import {
   Download,
   Trash2,
   Folder,
-  File,
   FolderPlus,
   Search,
   Grid3x3,
   List,
   ArrowLeft,
   HardDrive,
-  MoreVertical,
   FileText,
   Image as ImageIcon,
   Film,
@@ -60,6 +58,7 @@ const FileManager = () => {
   const [storageQuota, setStorageQuota] = useState(5368709120); // 5GB default
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -118,9 +117,7 @@ const FileManager = () => {
       }
     } catch (error) {
       console.error('[FileManager] Failed to load storage info:', error);
-      // Fallback to user object
-      setStorageUsed(user?.storageUsed || 0);
-      setStorageQuota(user?.storageQuota || 5368709120);
+      // Keep the default values already set in state
     }
   };
 
@@ -183,6 +180,89 @@ const FileManager = () => {
       setIsUploading(false);
       setUploadProgress(0);
       event.target.value = '';
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    if (droppedFiles.length === 0) return;
+
+    // Handle multiple files
+    for (const file of droppedFiles) {
+      await uploadFile(file);
+    }
+  };
+
+  const uploadFile = async (file: File) => {
+    console.log('[FileManager] Starting file upload:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+    });
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    if (currentFolder) {
+      formData.append('folderId', currentFolder);
+    }
+
+    try {
+      const response = await axiosInstance.post('/files/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+          const progress = progressEvent.total
+            ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            : 0;
+          setUploadProgress(progress);
+        },
+      });
+
+      console.log('[FileManager] Upload successful:', response.data);
+      
+      setStorageUsed(prev => prev + file.size);
+      
+      await Promise.all([
+        loadFiles(),
+        loadStorageInfo()
+      ]);
+      
+    } catch (error: any) {
+      console.error('[FileManager] Upload failed:', error);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message || 
+                          'Upload failed';
+      alert(`Upload failed: ${errorMessage}`);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -331,9 +411,7 @@ const FileManager = () => {
               </div>
               <div>
                 <h2 className="text-white font-medium">
-                  {user?.firstName && user?.lastName 
-                    ? `${user.firstName} ${user.lastName}` 
-                    : user?.username || 'User'}
+                  {user?.name || 'User'}
                 </h2>
                 <p className="text-dark-400 text-sm">{user?.email}</p>
               </div>
@@ -352,7 +430,31 @@ const FileManager = () => {
       </motion.div>
 
       {/* Main Content */}
-      <div className="flex-1 p-6">
+      <div 
+        className="flex-1 p-6 relative"
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {/* Drag and Drop Overlay */}
+        <AnimatePresence>
+          {isDragging && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-50 bg-primary-500/20 backdrop-blur-sm flex items-center justify-center border-4 border-dashed border-primary-500 rounded-lg"
+            >
+              <div className="text-center">
+                <Upload className="w-16 h-16 text-primary-400 mx-auto mb-4" />
+                <h3 className="text-2xl font-bold text-white mb-2">Drop files here</h3>
+                <p className="text-dark-300">Release to upload to {currentFolder ? 'current folder' : 'root'}</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="max-w-7xl w-full mx-auto space-y-6">
         {/* Header */}
         <motion.div

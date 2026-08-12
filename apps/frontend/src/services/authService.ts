@@ -16,7 +16,6 @@ import type {
   ForgotPasswordRequestDto,
   ResetPasswordRequestDto,
   VerifyEmailRequestDto,
-  SendVerificationEmailRequestDto,
   RetryConfig,
   ApiResponse,
 } from '../types/api.types';

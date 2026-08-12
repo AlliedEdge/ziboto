@@ -55,4 +55,11 @@ public class User extends BaseEntity {
     private Long storageUsed; // in bytes
     
     private java.time.LocalDateTime lastLoginAt;
+    
+    /**
+     * Alias for avatarUrl to support legacy code.
+     */
+    public String getProfilePicture() {
+        return this.avatarUrl;
+    }
 }
