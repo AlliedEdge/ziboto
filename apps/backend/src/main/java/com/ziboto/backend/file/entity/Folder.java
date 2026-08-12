@@ -70,6 +70,9 @@ public class Folder {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
     
+    @Column(name = "deleted_by")
+    private String deletedBy;
+    
     @Column(name = "created_by")
     private String createdBy;
     

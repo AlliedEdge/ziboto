@@ -4,6 +4,7 @@ import com.ziboto.backend.common.constant.ErrorCode;
 import com.ziboto.backend.exception.BaseException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,6 +21,7 @@ import java.util.UUID;
  */
 @Service
 @Slf4j
+@ConditionalOnProperty(name = "app.storage.type", havingValue = "local", matchIfMissing = true)
 public class LocalStorageService implements StorageService {
     
     @Value("${app.storage.local.base-path:/var/ziboto/storage}")
