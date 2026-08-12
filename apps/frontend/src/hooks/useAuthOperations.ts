@@ -111,9 +111,9 @@ export const useAuthOperations = () => {
    * Handle email verification
    */
   const handleVerifyEmail = useCallback(
-    async (token: string) => {
+    async (email: string, otp: string) => {
       try {
-        const result = await verifyEmail.execute(token);
+        const result = await verifyEmail.execute({ email, otp });
         // Refresh auth to get updated user data
         await store.refreshAuth();
         return result;
