@@ -62,7 +62,10 @@ public interface FileCommentRepository extends JpaRepository<FileComment, UUID> 
     
     /**
      * Find comments mentioning a user.
+     * Uses native query to search within JSONB array.
      */
-    @Query("SELECT c FROM FileComment c WHERE :userId MEMBER OF c.mentions ORDER BY c.createdAt DESC")
+    @Query(value = "SELECT * FROM file_comments c WHERE c.mentions @> CAST(:userId AS TEXT)::jsonb ORDER BY c.created_at DESC",
+           countQuery = "SELECT COUNT(*) FROM file_comments c WHERE c.mentions @> CAST(:userId AS TEXT)::jsonb",
+           nativeQuery = true)
     Page<FileComment> findCommentsMentioningUser(@Param("userId") Long userId, Pageable pageable);
 }

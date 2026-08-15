@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,6 +42,7 @@ public class FileComment {
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
     
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "mentions", columnDefinition = "jsonb")
     private List<Long> mentions;
     
