@@ -561,6 +561,17 @@ const FileManager = () => {
                 New Folder
               </Button>
 
+              {/* Trash Bin Button */}
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => navigate('/trash')}
+                className="w-full sm:w-auto"
+              >
+                <Trash2 className="w-4 h-4" />
+                Trash
+              </Button>
+
               {/* Back Button */}
               {currentFolder && (
                 <Button

@@ -9,3 +9,4 @@ export { default as SessionExpired } from './SessionExpired';
 export { default as Dashboard } from './Dashboard';
 export { default as InitializingApp } from './InitializingApp';
 export { default as FileManager } from './FileManager';
+export { default as TrashBin } from './TrashBin';
