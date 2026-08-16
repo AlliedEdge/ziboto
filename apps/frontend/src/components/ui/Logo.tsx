@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import { Shield } from 'lucide-react';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -13,9 +12,9 @@ const Logo: React.FC<LogoProps> = ({
   className = '' 
 }) => {
   const sizes = {
-    sm: { icon: 'w-6 h-6', text: 'text-xl' },
-    md: { icon: 'w-10 h-10', text: 'text-3xl' },
-    lg: { icon: 'w-16 h-16', text: 'text-5xl' },
+    sm: { container: 'w-6 h-6', text: 'text-xl' },
+    md: { container: 'w-10 h-10', text: 'text-3xl' },
+    lg: { container: 'w-16 h-16', text: 'text-5xl' },
   };
 
   return (
@@ -26,13 +25,17 @@ const Logo: React.FC<LogoProps> = ({
       className={`flex items-center gap-3 ${className}`}
     >
       <motion.div
-        whileHover={{ rotate: [0, -10, 10, -10, 0] }}
-        transition={{ duration: 0.5 }}
+        whileHover={{ scale: 1.05 }}
+        transition={{ duration: 0.3 }}
         className="relative"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl blur-lg opacity-50" />
-        <div className="relative bg-gradient-to-br from-primary-600 to-primary-700 p-2 rounded-xl shadow-glow-sm">
-          <Shield className={`${sizes[size].icon} text-white`} />
+        <div className="relative bg-white p-1.5 rounded-xl shadow-glow-sm">
+          <img 
+            src="/logo.svg" 
+            alt="Ziboto" 
+            className={`${sizes[size].container} object-contain`}
+          />
         </div>
       </motion.div>
       
