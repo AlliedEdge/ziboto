@@ -118,7 +118,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",           // OpenAPI v3 docs
                                 "/login/oauth2/**",          // OAuth2 login endpoints
                                 "/oauth2/**",                // OAuth2 authorization endpoints
-                                "/error"                     // Error endpoint
+                                "/error",                    // Error endpoint
+                                "/favicon.ico"               // Browser requests this during OAuth callback; backend is a REST API so it has no favicon — return 404, not 401
                         ).permitAll()
                         
                         // All other endpoints require authentication
