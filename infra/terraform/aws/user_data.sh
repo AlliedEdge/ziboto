@@ -55,13 +55,13 @@ JWT_SECRET=${jwt_secret}
 JWT_EXPIRATION=900000
 JWT_REFRESH_EXPIRATION=604800000
 
-# CORS - Update with your Amplify frontend URL
-CORS_ALLOWED_ORIGINS=https://your-amplify-url.amplifyapp.com,http://localhost:5173
+# CORS
+CORS_ALLOWED_ORIGINS=https://ziboto.alliededge.app,http://localhost:5173
 
 # Google OAuth
 GOOGLE_CLIENT_ID=${google_client_id}
 GOOGLE_CLIENT_SECRET=${google_client_secret}
-OAUTH_REDIRECT_URL=https://your-amplify-url.amplifyapp.com/oauth/callback
+OAUTH_REDIRECT_URL=https://ziboto.alliededge.app/oauth/callback
 
 # Logging
 LOG_LEVEL=INFO
