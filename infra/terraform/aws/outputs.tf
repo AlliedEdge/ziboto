@@ -173,9 +173,9 @@ output "deployment_instructions" {
        # Wait 2 minutes
        aws autoscaling set-desired-capacity --auto-scaling-group-name ${aws_autoscaling_group.backend.name} --desired-capacity 2
     
-    3. Deploy frontend to AWS Amplify (configure separately)
+    3. Frontend is deployed separately to https://ziboto.alliededge.app
     
-    4. Update CORS_ALLOWED_ORIGINS in backend environment with Amplify URL
+    4. CORS_ALLOWED_ORIGINS is set to https://ziboto.alliededge.app,http://localhost:5173 in user_data.sh
     
     RESOURCE MANAGEMENT:
     - To stop backend instances: Set ASG desired capacity to 0
