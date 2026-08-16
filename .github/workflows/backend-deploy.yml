@@ -4,9 +4,7 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'apps/backend/**'
-      - '.github/workflows/backend-deploy.yml'
+
   workflow_dispatch:
     inputs:
       skip_tests:
