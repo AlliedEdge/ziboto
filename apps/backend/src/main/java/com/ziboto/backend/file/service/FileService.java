@@ -52,9 +52,6 @@ public class FileService {
     private final StorageUsageService storageUsageService;
     private final EventPublisher eventPublisher;
     
-    @Autowired(required = false)
-    private com.ziboto.backend.search.service.FileSearchService fileSearchService;
-    
     public FileService(
             FileMetadataRepository fileMetadataRepository,
             FolderRepository folderRepository,
@@ -168,15 +165,7 @@ public class FileService {
             
             log.info("File uploaded successfully - fileId: {}, storageKey: {}", savedMetadata.getId(), storageKey);
             
-            // 13. Index file for search (V2 - Elasticsearch)
-            if (fileSearchService != null) {
-                try {
-                    fileSearchService.indexFile(savedMetadata);
-                } catch (Exception e) {
-                    log.error("Failed to index file for search - fileId: {}", savedMetadata.getId(), e);
-                    // Don't fail the upload if indexing fails
-                }
-            }
+            // Index file for search would happen here if Elasticsearch was integrated
             
             // 14. Publish file uploaded event for async processing (V2)
             try {
@@ -333,15 +322,7 @@ public class FileService {
         
         log.info("File deleted successfully - fileId: {}", fileId);
         
-        // 5. Remove from search index (V2 - Elasticsearch)
-        if (fileSearchService != null) {
-            try {
-                fileSearchService.deleteFromIndex(fileId);
-            } catch (Exception e) {
-                log.error("Failed to remove file from search index - fileId: {}", fileId, e);
-                // Don't fail the deletion if search index removal fails
-            }
-        }
+        // Remove from search index would happen here if Elasticsearch was integrated
         
         // 6. Publish file deleted event for cleanup tasks (V2)
         try {

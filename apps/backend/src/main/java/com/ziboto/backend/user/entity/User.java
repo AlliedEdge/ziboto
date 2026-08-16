@@ -22,7 +22,7 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
     
-    @Column(nullable = false)
+    @Column // Nullable for OAuth users
     private String password;
     
     @Column(length = 100)
@@ -49,6 +49,13 @@ public class User extends BaseEntity {
     
     @Column(length = 10)
     private String language; // e.g., "en", "es", "fr", ISO 639-1 codes
+    
+    // OAuth fields
+    @Column(length = 255, unique = true)
+    private String googleId; // Google OAuth subject identifier
+    
+    @Column(length = 50)
+    private String oauthProvider; // OAuth provider (google, github, etc.)
     
     private Long storageQuota; // in bytes
     
