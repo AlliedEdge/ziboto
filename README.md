@@ -1,507 +1,445 @@
-<div align="center">
+# Ziboto Cloud Storage
 
-<img src="assets/branding/logo.svg" alt="Ziboto Logo" width="200"/>
-
-# Ziboto
-
-### A Production-Grade Cloud-Native Distributed Object Storage Platform
-
-**Store • Sync • Share • Secure • Scale**
+A production-ready, horizontally scalable cloud storage platform built with Spring Boot and React, deployed on AWS with clean architecture.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 [![AWS](https://img.shields.io/badge/AWS-Deployed-FF9900.svg)](https://aws.amazon.com/)
 
-[Features](#-features) • [Architecture](#-architecture) • [Quick Start](#-quick-start) • [Full Spec](#-full-platform-spec) • [Roadmap](#️-roadmap)
-
-</div>res](#-features) • [Architecture](#-architecture) • [Quick Start](#-quick-start) • [Full Spec](#-full-platform-spec) • [Roadmap](#️-roadmap)
-
-</div>
+**Live Demo:** [Coming Soon]
 
 ---
 
-## 📖 Overview
+## 🎯 Project Overview
 
-**Ziboto** is a cloud-native distributed object storage platform inspired by modern storage systems such as Google Drive, Dropbox, OneDrive, and Amazon S3. It's built to demonstrate enterprise-grade backend engineering, cloud architecture, distributed systems principles, DevOps practices, and scalable infrastructure — not just another CRUD file-upload app.
+Ziboto is a **Google Drive-style cloud storage application** designed to demonstrate:
 
-Files are stored in object storage, metadata is managed separately, caching accelerates performance, asynchronous processing handles background tasks, and the whole thing deploys on modern cloud-native infrastructure.
+- ✅ Full-stack development (React + Spring Boot)
+- ✅ AWS cloud deployment and architecture
+- ✅ Horizontal backend scaling (2-10 EC2 instances)
+- ✅ Application Load Balancer for high availability
+- ✅ Infrastructure as Code (Terraform)
+- ✅ Load testing with k6 (1,000+ concurrent users)
+- ✅ Production-ready security and monitoring
+- ✅ Cost-aware AWS resource management
 
-**Current Status**: **v1-v3 Complete** ✅ (Core features, advanced functionality, and user experience enhancements fully implemented)
-
-This README covers the implemented features (v1-v3), the infrastructure upgrade roadmap (v4), and future enhancements (v5). See the complete [5-version roadmap](#️-roadmap) below.
-
-### Why Ziboto?
-
-- **Production-Ready Architecture** – built for scalability and reliability, not just a demo
-- **Cloud-Native Design** – AWS-first, containerized, designed to grow into Kubernetes/Terraform
-- **Modern Tech Stack** – Spring Boot, React, PostgreSQL, Redis, RabbitMQ, AWS S3
-- **Interview-Ready** – every technology is justified by a real problem in the storage domain, giving genuine discussion points for backend, cloud, DevOps, and system design interviews
-
----
-
-## ✨ Features (v1-v3 Implemented)
-
-<table>
-<tr>
-<td width="50%">
-
-### 🔐 Security & Authentication
-- JWT-based authentication with refresh tokens
-- Role-based access control (RBAC)
-- Email verification & Google OAuth
-- Secure file access management
-- Password-protected share links
-- Comprehensive audit logging
-
-### 📁 File Management
-- Hierarchical folder structure with nesting
-- Multi-file upload with chunking
-- Fast streaming downloads
-- File versioning and history
-- Trash bin with 30-day retention
-- Duplicate detection (SHA-256)
-- Metadata tracking and search
-
-### 🔍 Search & Discovery
-- Advanced search (name, type, size, date)
-- Elasticsearch full-text search
-- File type filtering
-- Storage analytics dashboard
-
-</td>
-<td width="50%">
-
-### 🤝 Sharing & Collaboration
-- Public/private share links
-- Expiring & password-protected links
-- File commenting with threading
-- Public galleries for collections
-- Activity feed tracking
-- Real-time WebSocket notifications
-
-### 🎨 Content Features
-- File previews (images, PDFs, videos)
-- Code syntax highlighting
-- Document previews
-- Thumbnail generation
-- Gallery layouts (grid, masonry, slideshow)
-
-### ⚡ Performance & Scale
-- Redis-based intelligent caching
-- PostgreSQL for reliable persistence
-- AWS S3 for scalable object storage
-- RabbitMQ background processing
-- Optimized query performance
-
-### 🐳 DevOps Ready
-- Fully containerized with Docker
-- Docker Compose orchestration
-- Nginx reverse proxy
-- AWS EC2 cloud deployment
-- Health checks and monitoring
-
-</td>
-</tr>
-</table>
+**Perfect for:** Technical interviews, portfolio projects, learning cloud architecture, and understanding scalable backend systems.
 
 ---
 
 ## 🏗️ Architecture
 
-<div align="center">
-  <img src="docs/architecture/HLD/hld-v1.svg" alt="Ziboto System Architecture" width="100%"/>
-
-  *High-Level Architecture: Cloud-native design with microservices-ready structure*
-</div>
-
-### Architecture Highlights (v1)
-
-- **Frontend Layer**: React SPA with optimistic UI updates via React Query
-- **API Gateway**: Nginx reverse proxy for load balancing and SSL termination
-- **Application Layer**: Spring Boot REST APIs with JWT authentication
-- **Cache Layer**: Redis for session management and frequently accessed data
-- **Persistence Layer**: PostgreSQL for metadata and relational data
-- **Storage Layer**: AWS S3 for scalable object storage
-
----
-
-## 🛠️ Technology Stack (v1)
-
-<div align="center">
-
-| Layer | Technologies |
-|-------|-------------|
-| **Frontend** | React • React Query • Axios • Modern UI |
-| **Backend** | Spring Boot 3.x • Spring Security • Spring Data JPA • RESTful APIs |
-| **Database** | PostgreSQL 15+ • Redis 7+ |
-| **Cloud** | AWS EC2 • AWS S3 • AWS VPC |
-| **DevOps** | Docker • Docker Compose • Nginx • Git |
-
-</div>
-
----
-
-## 📂 Project Structure
-
-```text
-ziboto/
-│
-├── architecture/          # System architecture diagrams and docs
-│   └── hld-v1.svg
-│
-├── backend/              # Spring Boot application
-│   ├── src/
-│   └── pom.xml
-│
-├── frontend/             # React application
-│   ├── src/
-│   └── package.json
-│
-├── docker/               # Docker configurations
-│   ├── backend.Dockerfile
-│   ├── frontend.Dockerfile
-│   └── nginx.conf
-│
-├── docker-compose.yml    # Multi-container orchestration
-└── README.md            # This file
 ```
+Users
+  ↓
+AWS Amplify (Frontend - React)
+  ↓
+Application Load Balancer
+  ↓
+┌──────────────────┬──────────────────┐
+│   EC2 Instance 1 │   EC2 Instance 2 │  (Auto-scales 2-10)
+│   Backend        │   Backend        │
+│   Spring Boot    │   Spring Boot    │
+└──────────────────┴──────────────────┘
+  ↓
+┌─────────────────┬──────────────┬─────────────────┐
+│                 │              │                 │
+RDS PostgreSQL    Amazon S3      Amazon MQ         
+Multi-AZ          File Storage   RabbitMQ          
+(metadata)        (files)        (async jobs)
+                  
+Redis ElastiCache
+(sessions, cache)
+```
+
+### Why This Architecture?
+
+- **EC2 + ALB** instead of Kubernetes: Simpler, easier to explain, production-ready
+- **Horizontal Scaling:** Auto Scaling Group handles 2-10 backend instances
+- **Stateless Backend:** Can scale horizontally without session affinity issues
+- **Managed Services:** RDS, ElastiCache, Amazon MQ reduce operational overhead
+- **Cost-Optimized:** ~$50-130/month, can stop resources when not in use
+
+---
+
+## ✨ Features
+
+### 📁 Core File Management
+- Upload, download, delete files
+- Hierarchical folder structure
+- File versioning and history
+- 30-day trash bin with restore
+- Duplicate detection (SHA-256)
+- File preview (images, PDFs, videos, code)
+
+### 🔐 Security & Authentication
+- JWT-based authentication (access + refresh tokens)
+- Role-based access control (RBAC)
+- Email verification
+- Password reset
+- Rate limiting (Redis-based)
+- Audit logging
+
+### 🤝 Sharing & Collaboration
+- Public/private share links
+- Password-protected shares
+- Expiring links
+- File commenting with threading
+- Public galleries
+
+### ⚡ Performance
+- Redis caching for sessions and frequently accessed data
+- PostgreSQL with connection pooling
+- S3 for scalable object storage
+- Asynchronous processing with RabbitMQ
+- CloudWatch monitoring and alarms
+
+### 📊 Analytics
+- Storage usage tracking
+- Activity feed
+- User analytics dashboard
+
+---
+
+## 🛠️ Technology Stack
+
+### Backend
+- **Framework:** Spring Boot 3.x (Java 21)
+- **Security:** Spring Security, JWT (JJWT)
+- **Database:** PostgreSQL 15 (JPA/Hibernate)
+- **Cache:** Redis 7
+- **Messaging:** RabbitMQ 3.12
+- **Storage:** AWS S3
+- **Email:** Resend SDK
+- **API Docs:** SpringDoc OpenAPI
+
+### Frontend
+- **Framework:** React 19 + Vite
+- **State:** Zustand
+- **Routing:** React Router v7
+- **HTTP:** Axios
+- **UI:** Tailwind CSS v4, Framer Motion
+- **Forms:** React Hook Form + Zod
+
+### Infrastructure
+- **Cloud:** AWS (EC2, ALB, RDS, S3, ElastiCache, Amazon MQ)
+- **IaC:** Terraform
+- **Deployment:** AWS Amplify (frontend), EC2 Auto Scaling (backend)
+- **Monitoring:** CloudWatch, Budget alerts
+- **Load Testing:** k6
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
+- Java 21
+- Node.js 18+
+- Docker & Docker Compose
+- AWS CLI (for deployment)
+- Terraform 1.5+ (for infrastructure)
 
-- Docker Engine 20.10+
-- Docker Compose 2.0+
-- Git
+### Local Development
 
-### Installation
-
-1️⃣ **Clone the repository**
-
+1. **Clone Repository**
 ```bash
 git clone https://github.com/yourusername/ziboto.git
 cd ziboto
 ```
 
-2️⃣ **Configure environment variables**
-
+2. **Start Infrastructure Services**
 ```bash
-# Create .env file with your AWS credentials
+cd infra/docker
+docker-compose up -d postgres redis rabbitmq
+```
+
+3. **Configure Backend**
+```bash
+cd ../../apps/backend
 cp .env.example .env
 # Edit .env with your configuration
 ```
 
-3️⃣ **Launch the application**
+4. **Run Backend**
+```bash
+./mvnw spring-boot:run
+```
+
+Backend runs on http://localhost:8080
+
+5. **Configure Frontend**
+```bash
+cd ../frontend
+cp .env.example .env
+# Edit .env: VITE_API_URL=http://localhost:8080/api/v1
+```
+
+6. **Run Frontend**
+```bash
+npm install
+npm run dev
+```
+
+Frontend runs on http://localhost:5173
+
+7. **Access Application**
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8080/api/v1
+- Swagger UI: http://localhost:8080/swagger-ui.html
+- RabbitMQ Management: http://localhost:15672 (ziboto/ziboto123)
+
+---
+
+## 📦 AWS Deployment
+
+Complete deployment guide: [DEPLOYMENT.md](DEPLOYMENT.md)
+
+### Quick Deploy
 
 ```bash
-docker compose up --build
+cd infra/terraform/aws
+
+# 1. Configure variables
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your settings
+
+# 2. Deploy infrastructure (15-20 minutes)
+terraform init
+terraform apply
+
+# 3. Build and upload backend
+cd ../../../apps/backend
+./mvnw clean package -DskipTests
+aws s3 cp target/backend-*.jar s3://$(terraform output -raw s3_bucket_name)/deploy/ziboto-backend.jar
+
+# 4. Deploy frontend to Amplify
+cd ../frontend
+amplify init
+amplify publish
 ```
 
-4️⃣ **Access Ziboto**
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions.
 
-- **Frontend**: http://localhost
-- **Backend API**: http://localhost/api
-- **API Docs**: http://localhost/api/swagger-ui.html
+---
 
-### Development Mode
+## 🧪 Load Testing
+
+k6 load testing suite included for performance validation.
 
 ```bash
-# Start backend only
-docker compose up backend postgres redis
+cd tests/load
 
-# Start frontend in dev mode (in another terminal)
-cd frontend && npm run dev
+# Authentication test
+k6 run auth-load.k6.js
+
+# File operations test
+k6 run file-operations.k6.js
+
+# Full scenario (1,000 VUs)
+API_URL=http://your-alb-url.com k6 run full-scenario.k6.js
+```
+
+**Target Performance:**
+- 1,000 concurrent users
+- <1% error rate
+- p95 latency <500ms
+- p99 latency <1000ms
+
+See [tests/load/README.md](tests/load/README.md) for details.
+
+---
+
+## 💰 Cost Management
+
+Estimated AWS costs: **$50-130/month**
+
+### Always Running:
+- RDS PostgreSQL: ~$15/month
+- ElastiCache Redis: ~$12/month
+- Amazon MQ RabbitMQ: ~$17/month
+- ALB: ~$22/month
+- NAT Gateways: ~$64/month
+
+### Variable:
+- EC2 instances (2x t3.medium): ~$60/month
+- S3 storage: ~$0.023/GB
+- Data transfer: ~$0.09/GB
+
+### Cost Optimization:
+- Stop EC2 when not demonstrating (saves $60/month)
+- Stop RDS for up to 7 days (saves 50%)
+- Delete ElastiCache/Amazon MQ when not testing (saves $29/month)
+- Use t3.micro instead of t3.medium (saves $30/month)
+
+**AWS Budget configured** with alerts at 50%, 80%, 100% of monthly limit.
+
+---
+
+## 📊 Horizontal Scaling
+
+### Auto Scaling Configuration
+- **Minimum:** 2 instances (high availability)
+- **Maximum:** 10 instances (cost control)
+- **Scale Up:** CPU > 70% for 2 minutes → add 1 instance
+- **Scale Down:** CPU < 20% for 2 minutes → remove 1 instance
+
+### Load Distribution
+```
+       Application Load Balancer
+              ↓
+    ┌─────────┼─────────┐
+    ↓         ↓         ↓
+  EC2 #1    EC2 #2    EC2 #3
+  Backend   Backend   Backend
+```
+
+### Stateless Design
+- **Sessions:** Redis (shared across instances)
+- **Files:** S3 (centralized)
+- **Database:** RDS (connection pooling)
+- **Messages:** Amazon MQ (shared queue)
+
+---
+
+## 🔐 Security
+
+- **Authentication:** JWT with refresh tokens
+- **Authorization:** Role-based access control (RBAC)
+- **Rate Limiting:** Redis-based (5 login attempts per 15 min)
+- **Encryption at Rest:** RDS, S3, ElastiCache, Amazon MQ (KMS)
+- **Encryption in Transit:** HTTPS (optional), SSL for database
+- **Network Security:** Private subnets, security groups
+- **No Hardcoded Secrets:** IAM roles, environment variables
+- **Audit Logging:** Comprehensive audit trail
+
+---
+
+## 📁 Project Structure
+
+```
+ziboto/
+├── apps/
+│   ├── backend/            # Spring Boot backend
+│   │   ├── src/main/java/com/ziboto/backend/
+│   │   │   ├── auth/       # JWT authentication
+│   │   │   ├── file/       # File management
+│   │   │   ├── user/       # User management
+│   │   │   ├── share/      # File sharing
+│   │   │   ├── messaging/  # RabbitMQ
+│   │   │   ├── cache/      # Redis
+│   │   │   └── ...         # 21 modules total
+│   │   └── pom.xml
+│   └── frontend/           # React frontend
+│       ├── src/
+│       └── package.json
+├── infra/
+│   ├── terraform/aws/      # AWS infrastructure
+│   │   ├── main.tf
+│   │   ├── ec2.tf
+│   │   ├── alb.tf
+│   │   ├── rds.tf
+│   │   ├── s3.tf
+│   │   └── ...
+│   └── docker/             # Local development
+│       └── docker-compose.yml
+├── tests/load/             # k6 load tests
+├── DEPLOYMENT.md           # Deployment guide
+├── RESTRUCTURING_SUMMARY.md # Architecture decisions
+└── README.md               # This file
 ```
 
 ---
 
-## 🗺️ Roadmap
+## 📖 Documentation
 
-Ziboto evolves across **five deliberate stages**, each with a specific focus — building core features first, then maturing them, then upgrading infrastructure, adding intelligence, and finally mobile/collaboration.
-
-### 🎯 v1 — MVP (✅ COMPLETE)
-
-**Theme: Core storage functionality with simple deployment**
-
-- [x] Project architecture and setup
-- [x] User authentication & JWT integration
-- [x] Folder hierarchy management
-- [x] File upload with multipart support
-- [x] File download with streaming
-- [x] AWS S3 integration
-- [x] Redis caching layer
-- [x] PostgreSQL database
-- [x] Docker containerization
-- [x] Nginx reverse proxy
-- [x] Basic API documentation
-
-### 🧩 v2 — Feature Maturity (✅ COMPLETE)
-
-**Theme: Advanced storage features while maintaining v1's deployment model**
-
-- [x] Role-based access control (RBAC)
-- [x] File sharing with expirable/password-protected links
-- [x] File versioning and history
-- [x] Advanced search system (name, type, size, date)
-- [x] Duplicate detection (SHA-256 hashing)
-- [x] RabbitMQ background processing
-- [x] Email notification system
-- [x] Comprehensive audit logging
-- [x] Email verification workflow
-- [x] Google OAuth integration
-- [x] Elasticsearch full-text search
-
-### ⚡ v3 — User Experience Enhancement (✅ COMPLETE)
-
-**Theme: Activity tracking, real-time updates, and content features**
-
-- [x] Activity feed with 23 activity types
-- [x] Real-time WebSocket notifications
-- [x] File commenting system with threading
-- [x] Trash bin with 30-day retention
-- [x] Storage analytics dashboard
-- [x] Public galleries for file collections
-- [x] File preview system (images, PDFs, videos, documents, code)
-
-### ☁️ v4 — Cloud-Native Infrastructure (📋 PLANNED)
-
-**Theme: Production-grade deployment and scalability**
-
-- [ ] Migrate to Kubernetes (Amazon EKS)
-- [ ] Terraform Infrastructure as Code (VPC, EKS, S3, IAM, RDS)
-- [ ] Kubernetes Ingress with AWS Application Load Balancer
-- [ ] Horizontal Pod Autoscaler & rolling updates
-- [ ] Helm charts for deployment management
-- [ ] Prometheus + Grafana monitoring stack
-- [ ] OpenTelemetry distributed tracing
-- [ ] Resilience4j circuit breakers
-- [ ] Bucket4j rate limiting with Redis
-- [ ] CI/CD pipeline with GitHub Actions
-- [ ] Load testing with k6
-- [ ] Multi-AZ database deployment
-- [ ] S3 lifecycle policies
-- [ ] CloudFront CDN integration
-
-### 🚀 v5 — Intelligence & Mobile (📋 PLANNED)
-
-**Theme: AI features, mobile apps, and real-time collaboration**
-
-- [ ] Mobile apps (iOS & Android with React Native)
-- [ ] Real-time collaborative editing
-- [ ] AI-powered smart search (natural language)
-- [ ] Automatic file categorization
-- [ ] Smart file recommendations
-- [ ] AI file summaries
-- [ ] OCR for document search
-- [ ] Video transcription
-- [ ] Team workspaces
-- [ ] Multi-tenant organization support
-- [ ] Advanced admin dashboard
-- [ ] Usage analytics and insights
-- [ ] Automatic virus scanning
-- [ ] Multi-region replication
-- [ ] Edge caching
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Complete AWS deployment guide
+- **[RESTRUCTURING_SUMMARY.md](RESTRUCTURING_SUMMARY.md)** - Architecture decisions and changes
+- **[tests/load/README.md](tests/load/README.md)** - Load testing guide
+- **[Terraform README](infra/terraform/aws/README.md)** - Infrastructure configuration
 
 ---
 
-## 📘 Full Platform Spec
+## 🎓 Learning Outcomes
 
-> This is the long-term vision for Ziboto beyond v1 — kept in full here for reference so nothing gets lost between sessions.
+This project demonstrates:
 
-### Goals
+1. **Full-Stack Development**
+   - RESTful API design
+   - React SPA with state management
+   - Form validation, error handling
+   - File upload/download with progress
 
-* Build a production-grade storage platform
-* Demonstrate cloud-native architecture
-* Learn distributed systems concepts
-* Showcase backend engineering skills
-* Deploy on AWS using modern DevOps practices
-* Implement scalable and secure file storage
-* Demonstrate Infrastructure as Code
-* Showcase Kubernetes and cloud deployments
+2. **Cloud Architecture**
+   - Horizontal scaling with ALB + Auto Scaling
+   - Managed services (RDS, ElastiCache, Amazon MQ)
+   - Stateless backend design
+   - Multi-AZ high availability
 
-### Core Modules
+3. **Infrastructure as Code**
+   - Terraform for AWS resources
+   - Modular infrastructure design
+   - Environment separation (dev/prod)
 
-**Authentication & Security**
-User Registration • Secure Login • JWT Authentication • Refresh Tokens • Email Verification • Forgot Password • Password Reset • Google OAuth • BCrypt Password Hashing • Role-Based Access Control (RBAC) • Session Management • Device Login Tracking
+4. **DevOps Practices**
+   - CI/CD with AWS Amplify
+   - Automated deployments
+   - CloudWatch monitoring
+   - Log aggregation
 
-**User Management**
-User Profile • Avatar Upload • Storage Usage Dashboard • Account Settings • Activity History • Storage Quotas • Admin User Management
+5. **Performance & Scalability**
+   - Load balancing
+   - Caching strategies (Redis)
+   - Asynchronous processing (RabbitMQ)
+   - Database optimization
 
-**File Management**
-Upload/Download/Delete/Rename/Copy/Move Files • Bulk Upload • Bulk Delete • Drag & Drop Upload • Folder Creation • Nested Folder Hierarchy • File Preview • Trash Bin • Permanent Delete • Restore Deleted Files
+6. **Security**
+   - Authentication & authorization
+   - Encryption (at rest & in transit)
+   - Network isolation
+   - Audit logging
 
-**Smart Upload Engine**
-Multipart Uploads • Chunked Uploads • Parallel Uploads • Resumable Uploads • Upload Progress Tracking • Retry Failed Chunks • Upload Validation • Maximum File Size Limits
-
-**Smart Download Engine**
-Streaming Downloads • HTTP Range Requests • Download Resume • Secure Temporary Download Links • Download Analytics
-
-**Object Storage**
-Files in AWS S3, metadata in PostgreSQL — separation of metadata and file objects for better scalability, lower database size, faster querying, industry-standard architecture.
-
-**Metadata Management**
-File Name • File Size • MIME Type • Upload Time • Last Modified • Owner • Folder • SHA-256 Hash • S3 Object Key • File Version • Download Count
-
-**Search System**
-Search by Name / Type / Extension / Size / Tags / Date • Filter • Sorting
-
-**File Sharing**
-Public/Private Share Links • Password Protected Links • Expiring Links • View/Download/Edit Permission • Share Revocation
-
-**File Versioning**
-Version History • Restore Previous Version • Compare Versions • Delete Old Versions
-
-**Storage Intelligence**
-Duplicate File Detection • SHA-256 Hashing • Storage Analytics • Usage Statistics • File Type Distribution • Largest Files • Recently Uploaded Files
-
-**Notifications**
-Upload Completed • File Shared • Storage Limit Warning • Login Alerts • Security Alerts • Share Accepted
-
-**Audit System**
-Every important action is recorded: Login • Logout • Upload • Download • Delete • Rename • Share • Permission Changes • Password Changes
-
-### Backend Architecture (full platform)
-
-```
-Client → Nginx Reverse Proxy → Spring Boot API → Redis Cache → PostgreSQL → AWS S3
-```
-
-### Backend Technologies
-
-Java 21 • Spring Boot • Spring Security • Spring Data JPA • Spring Validation • Spring Cache • Spring Actuator • Spring Scheduling • Spring Web • MapStruct • Lombok
-
-### Database (PostgreSQL) stores
-
-Users • Metadata • Folder Structure • Sharing Information • Permissions • File Versions • Audit Logs • Notifications
-
-### Cache Layer (Redis) used for
-
-Frequently Accessed Metadata • User Sessions • Download Statistics • Search Results • Authentication Data • Rate Limiting • Frequently Downloaded Files
-
-### Background Processing (RabbitMQ)
-
-Virus Scanning • Thumbnail Generation • Metadata Extraction • Email Notifications • Cache Refresh • Audit Processing • Storage Analytics
-
-### AWS Services
-
-- **Compute**: Amazon EC2
-- **Storage**: Amazon S3
-- **Identity**: AWS IAM (least-privilege roles for EC2/app access to S3)
-- **Networking**: Amazon VPC, Public/Private Subnets, Security Groups, Internet Gateway, NAT Gateway
-- **Load Balancing**: AWS Application Load Balancer
-- **Monitoring**: CloudWatch, CloudWatch Logs
-- **Security**: AWS KMS (optional), AWS Secrets Manager (optional)
-
-### Docker
-
-Every component containerized: Frontend • Backend • PostgreSQL • Redis • RabbitMQ • Nginx
-
-### Kubernetes (Amazon EKS)
-
-Deployments • Services • Ingress • ConfigMaps • Secrets • Persistent Volumes • Horizontal Pod Autoscaler • Rolling Updates
-
-### Terraform (Infrastructure as Code) provisions
-
-VPC • EC2 • EKS Cluster • S3 Bucket • IAM Roles • Security Groups • Load Balancer • CloudWatch Resources • Networking Components
-
-### DevOps
-
-Docker • Docker Compose • GitHub Actions • Automated Build/Testing/Deployment • Docker Registry • Environment Variables • Production Deployment
-
-### Monitoring & Observability
-
-- **Monitoring**: Spring Boot Actuator, Prometheus, Grafana
-- **Distributed Tracing**: OpenTelemetry
-- **Metrics**: API Response Time • Cache Hit Ratio • Upload/Download Time • Active Users • Memory/CPU Usage • S3 Latency • Database Query Performance
-
-### Security (full platform)
-
-JWT Authentication • Refresh Tokens • BCrypt Password Hashing • Role-Based Access Control • OAuth2 Login • Input Validation • Secure HTTP Headers • CORS Configuration • HTTPS • Rate Limiting (Bucket4j + Redis) • File Type/Size Validation • Secure Download Tokens
-
-### Scalability Features
-
-Stateless Backend APIs • Redis Distributed Cache • Horizontal Scaling • Load Balancing • Object Storage Separation • Background Processing • Connection Pooling • Retry Mechanisms • Health Checks • Circuit Breaker (Resilience4j)
-
-### Testing
-
-- **Unit**: JUnit 5, Mockito
-- **Integration**: Spring Boot Test, Testcontainers
-- **API**: Postman Collection
-- **Load**: k6
-
-### Full Tech Stack
-
-**Frontend**: React 19 • TypeScript • Tailwind CSS • React Query • React Router • Axios
-**Backend**: Java 21 • Spring Boot • Spring Security • Spring Data JPA • MapStruct • Spring Actuator
-**Database**: PostgreSQL
-**Cache**: Redis
-**Messaging**: RabbitMQ
-**Cloud**: AWS EC2 • AWS S3 • AWS IAM • AWS VPC • AWS Application Load Balancer • CloudWatch
-**Infrastructure**: Docker • Docker Compose • Kubernetes (Amazon EKS) • Terraform
-**DevOps**: GitHub Actions • CI/CD
-**Monitoring**: Prometheus • Grafana • OpenTelemetry
-
----
-
-## 🔮 Beyond v3 (Future Enhancements)
-
-**Theme: intelligence and multi-tenancy — not required for a working platform, but natural next steps once v1–v3 are solid**
-
-### AI
-
-Smart File Search • Natural Language Search • Automatic File Categorization • Duplicate Detection Suggestions • AI File Summaries
-
-### Enterprise
-
-Team Workspaces • Organization Management • Storage Quotas • Admin Dashboard • Billing Integration • Multi-Tenant Support • Compliance Reports
+7. **Cost Management**
+   - Resource optimization
+   - Budget alerts
+   - Right-sizing instances
+   - Stopping idle resources
 
 ---
 
 ## 🤝 Contributing
 
-1. Fork the repo and branch from `main`:
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-2. Commit with [Conventional Commits](https://www.conventionalcommits.org/):
-   ```bash
-   git commit -m "feat: add amazing new feature"
-   ```
-3. Push and open a Pull Request.
-
-**Guidelines**: follow existing code style • write clear commit messages • add tests for new features • update docs • keep PRs focused and atomic.
+Contributions welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
 ---
 
-## 🐛 Issues & Support
+## 📝 License
 
-- **Bug Reports**: [Open an issue](https://github.com/yourusername/ziboto/issues/new?template=bug_report.md)
-- **Feature Requests**: [Request a feature](https://github.com/yourusername/ziboto/issues/new?template=feature_request.md)
-- **Questions**: Check existing [discussions](https://github.com/yourusername/ziboto/discussions) or start a new one
-
----
-
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
 ## 🙏 Acknowledgments
 
-Built with [Spring Boot](https://spring.io/projects/spring-boot) • [React](https://react.dev/) • [PostgreSQL](https://www.postgresql.org/) • [Redis](https://redis.io/) • [Docker](https://www.docker.com/) • [AWS](https://aws.amazon.com/)
+Built with:
+- [Spring Boot](https://spring.io/projects/spring-boot)
+- [React](https://react.dev/)
+- [PostgreSQL](https://www.postgresql.org/)
+- [Redis](https://redis.io/)
+- [RabbitMQ](https://www.rabbitmq.com/)
+- [AWS](https://aws.amazon.com/)
+- [Terraform](https://www.terraform.io/)
+- [k6](https://k6.io/)
 
 ---
 
-<div align="center">
+## 📧 Contact
 
-**⭐ Star this repo if you find it helpful!**
+For questions or feedback, please open an issue on GitHub.
 
-Made with ❤️ by the Ziboto team
+---
 
-[Report Bug](https://github.com/yourusername/ziboto/issues) • [Request Feature](https://github.com/yourusername/ziboto/issues) • [Documentation](https://github.com/yourusername/ziboto/wiki)
-
-</div>
+**Ziboto** - Production-ready cloud storage with clean AWS architecture.
