@@ -1,0 +1,319 @@
+name: Deploy Backend to AWS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/backend/**'
+      - '.github/workflows/backend-deploy.yml'
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests (use for hotfix only)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  AWS_REGION: eu-north-1
+  S3_BUCKET: ziboto-files-277522752099-eu-north-1-an
+  S3_DEPLOY_PATH: deploy/ziboto-backend.jar
+  ASG_NAME: ziboto-prod-backend-asg
+  JAVA_VERSION: '21'
+  MAVEN_OPTS: -Xmx1024m
+
+# Prevent concurrent deployments
+concurrency:
+  group: backend-production-deployment
+  cancel-in-progress: false
+
+jobs:
+  # Job 1: Build and Test
+  build:
+    name: Build & Test Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+      
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      
+      - name: Verify Maven version
+        working-directory: ./apps/backend
+        run: mvn --version
+      
+      - name: Run tests
+        if: ${{ !inputs.skip_tests }}
+        working-directory: ./apps/backend
+        run: mvn test -B
+        env:
+          # Use in-memory H2 for tests to avoid needing PostgreSQL
+          SPRING_PROFILES_ACTIVE: test
+      
+      - name: Build JAR
+        working-directory: ./apps/backend
+        run: mvn clean package -DskipTests -B
+      
+      - name: Verify JAR exists
+        working-directory: ./apps/backend
+        run: |
+          if [ ! -f target/backend-*.jar ]; then
+            echo "❌ JAR file not found!"
+            exit 1
+          fi
+          JAR_FILE=$(ls target/backend-*.jar)
+          JAR_SIZE=$(du -h "$JAR_FILE" | cut -f1)
+          echo "✅ JAR built successfully: $JAR_FILE ($JAR_SIZE)"
+          echo "JAR_FILE=$JAR_FILE" >> $GITHUB_ENV
+      
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: apps/backend/target/backend-*.jar
+          retention-days: 7
+          if-no-files-found: error
+  
+  # Job 2: Deploy to AWS
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://api.ziboto.alliededge.app
+    
+    permissions:
+      id-token: write   # Required for OIDC
+      contents: read
+    
+    steps:
+      - name: Checkout code (for scripts)
+        uses: actions/checkout@v4
+      
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-jar
+          path: ./artifacts
+      
+      - name: Rename JAR to standard name
+        run: |
+          mv artifacts/backend-*.jar artifacts/ziboto-backend.jar
+          ls -lh artifacts/
+      
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOYMENT_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActions-Backend-Deploy
+      
+      - name: Verify AWS credentials
+        run: |
+          echo "✅ AWS credentials configured"
+          aws sts get-caller-identity
+      
+      - name: Upload JAR to S3
+        run: |
+          echo "📦 Uploading JAR to S3..."
+          aws s3 cp artifacts/ziboto-backend.jar s3://${{ env.S3_BUCKET }}/${{ env.S3_DEPLOY_PATH }} \
+            --metadata "git-commit=${{ github.sha }},git-branch=${{ github.ref_name }},deployed-by=github-actions,deployed-at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          
+          echo "✅ JAR uploaded successfully"
+          
+          # Verify upload
+          aws s3 ls s3://${{ env.S3_BUCKET }}/${{ env.S3_DEPLOY_PATH }} --human-readable
+      
+      - name: Start Auto Scaling Group instance refresh
+        id: asg_refresh
+        run: |
+          echo "🔄 Starting ASG instance refresh for rolling deployment..."
+          
+          REFRESH_ID=$(aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name ${{ env.ASG_NAME }} \
+            --preferences '{
+              "MinHealthyPercentage": 50,
+              "InstanceWarmup": 180,
+              "CheckpointPercentages": [50, 100],
+              "CheckpointDelay": 60,
+              "SkipMatching": false
+            }' \
+            --desired-configuration '{
+              "LaunchTemplate": {
+                "LaunchTemplateName": "ziboto-prod-backend-lt",
+                "Version": "$Latest"
+              }
+            }' \
+            --query 'InstanceRefreshId' \
+            --output text)
+          
+          echo "refresh_id=$REFRESH_ID" >> $GITHUB_OUTPUT
+          echo "✅ Instance refresh started: $REFRESH_ID"
+      
+      - name: Wait for instance refresh to complete
+        run: |
+          REFRESH_ID="${{ steps.asg_refresh.outputs.refresh_id }}"
+          echo "⏳ Waiting for instance refresh $REFRESH_ID to complete..."
+          echo "This will take approximately 6-10 minutes for rolling deployment..."
+          
+          MAX_WAIT=1200  # 20 minutes max
+          ELAPSED=0
+          SLEEP_INTERVAL=30
+          
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            STATUS=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name ${{ env.ASG_NAME }} \
+              --instance-refresh-ids $REFRESH_ID \
+              --query 'InstanceRefreshes[0].Status' \
+              --output text)
+            
+            PROGRESS=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name ${{ env.ASG_NAME }} \
+              --instance-refresh-ids $REFRESH_ID \
+              --query 'InstanceRefreshes[0].PercentageComplete' \
+              --output text)
+            
+            echo "Status: $STATUS | Progress: ${PROGRESS}%"
+            
+            if [ "$STATUS" = "Successful" ]; then
+              echo "✅ Instance refresh completed successfully!"
+              break
+            elif [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ]; then
+              echo "❌ Instance refresh failed with status: $STATUS"
+              
+              # Get failure details
+              aws autoscaling describe-instance-refreshes \
+                --auto-scaling-group-name ${{ env.ASG_NAME }} \
+                --instance-refresh-ids $REFRESH_ID \
+                --query 'InstanceRefreshes[0]'
+              
+              exit 1
+            fi
+            
+            sleep $SLEEP_INTERVAL
+            ELAPSED=$((ELAPSED + SLEEP_INTERVAL))
+          done
+          
+          if [ $ELAPSED -ge $MAX_WAIT ]; then
+            echo "❌ Timeout waiting for instance refresh"
+            exit 1
+          fi
+      
+      - name: Verify deployment health
+        run: |
+          echo "🏥 Verifying ALB target health..."
+          
+          # Get target group ARN
+          TG_ARN=$(aws elbv2 describe-target-groups \
+            --names ziboto-prod-backend-tg \
+            --query 'TargetGroups[0].TargetGroupArn' \
+            --output text)
+          
+          # Check target health
+          HEALTHY_COUNT=0
+          MAX_RETRIES=10
+          RETRY=0
+          
+          while [ $RETRY -lt $MAX_RETRIES ]; do
+            HEALTHY_COUNT=$(aws elbv2 describe-target-health \
+              --target-group-arn $TG_ARN \
+              --query "length(TargetHealthDescriptions[?TargetHealth.State=='healthy'])" \
+              --output text)
+            
+            echo "Healthy targets: $HEALTHY_COUNT"
+            
+            if [ "$HEALTHY_COUNT" -ge "2" ]; then
+              echo "✅ At least 2 healthy targets confirmed"
+              break
+            fi
+            
+            RETRY=$((RETRY + 1))
+            echo "Waiting for targets to become healthy... (attempt $RETRY/$MAX_RETRIES)"
+            sleep 15
+          done
+          
+          if [ "$HEALTHY_COUNT" -lt "2" ]; then
+            echo "⚠️  Warning: Only $HEALTHY_COUNT healthy targets"
+          fi
+          
+          # Show target details
+          aws elbv2 describe-target-health \
+            --target-group-arn $TG_ARN \
+            --query 'TargetHealthDescriptions[*].[Target.Id,TargetHealth.State,TargetHealth.Reason]' \
+            --output table
+      
+      - name: Test health endpoint
+        run: |
+          echo "🔍 Testing application health endpoint..."
+          
+          # Get ALB DNS name
+          ALB_DNS=$(aws elbv2 describe-load-balancers \
+            --names ziboto-prod-alb \
+            --query 'LoadBalancers[0].DNSName' \
+            --output text)
+          
+          echo "ALB DNS: $ALB_DNS"
+          
+          # Test health endpoint (using internal ALB since we're not using custom domain yet)
+          MAX_RETRIES=5
+          RETRY=0
+          
+          while [ $RETRY -lt $MAX_RETRIES ]; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$ALB_DNS:8080/actuator/health || echo "000")
+            
+            echo "Health check status: $HTTP_STATUS"
+            
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "✅ Health endpoint responding correctly"
+              
+              # Get detailed health info
+              curl -s http://$ALB_DNS:8080/actuator/health | jq '.' || true
+              break
+            fi
+            
+            RETRY=$((RETRY + 1))
+            echo "Retry $RETRY/$MAX_RETRIES..."
+            sleep 10
+          done
+          
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "⚠️  Warning: Health endpoint not responding with 200 OK"
+          fi
+      
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "📊 Deployment Summary"
+          echo "===================="
+          echo "Git Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Deployed by: ${{ github.actor }}"
+          echo "Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "===================="
+      
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ DEPLOYMENT FAILED"
+          echo "Please check the logs and rollback if necessary"
+          echo "Rollback command: aws autoscaling cancel-instance-refresh --auto-scaling-group-name ${{ env.ASG_NAME }}"
