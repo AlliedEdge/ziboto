@@ -175,7 +175,7 @@ jobs:
             }' \
             --desired-configuration '{
               "LaunchTemplate": {
-                "LaunchTemplateName": "ziboto-prod-backend-lt",
+                "LaunchTemplateId": "lt-0e3dd4cae4cfc0285",
                 "Version": "$Latest"
               }
             }' \
