@@ -12,7 +12,9 @@ import {
   SessionExpired,
   InitializingApp,
   FileManager,
+  TrashBin,
 } from './pages';
+import OAuthCallbackPage from './pages/OAuthCallbackPage';
 
 function App() {
   return (
@@ -45,6 +47,16 @@ function App() {
             element={
               <ProtectedRoute>
                 <FileManager />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Protected route - Trash Bin */}
+          <Route
+            path="/trash"
+            element={
+              <ProtectedRoute>
+                <TrashBin />
               </ProtectedRoute>
             }
           />
@@ -83,6 +95,7 @@ function App() {
           <Route path="/verify-email" element={<EmailVerificationSuccess />} />
           <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
           <Route path="/session-expired" element={<SessionExpired />} />
+          <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
 
           {/* Catch all - redirect to root */}
           <Route path="*" element={<Navigate to="/" replace />} />
