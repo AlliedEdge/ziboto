@@ -18,6 +18,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.NullSecurityContextRepository;
+import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 /**
@@ -132,16 +134,27 @@ public class SecurityConfig {
                         // Returns JSON error responses instead of redirecting to login page
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 )
+
+                // OAuth2 stores the authorization request (including its CSRF state) in the
+                // HTTP session between the authorization redirect and Google's callback.
+                // STATELESS prevents Spring Security from creating that session reliably.
+                // Keep the SecurityContext non-persistent so API authentication remains JWT-only.
+                .securityContext(context -> context
+                        .securityContextRepository(new NullSecurityContextRepository())
+                )
                 
                 // Configure session management
                 .sessionManagement(session -> session
-                        // Stateless sessions - no server-side session storage
-                        // All authentication state stored in JWT token
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        // Create a session only for the OAuth2 authorization request. The
+                        // configured Spring Session Redis store shares this state across nodes.
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 )
                 
                 // Configure OAuth2 login
                 .oauth2Login(oauth2 -> oauth2
+                        .authorizationEndpoint(endpoint -> endpoint
+                                .authorizationRequestRepository(
+                                        new HttpSessionOAuth2AuthorizationRequestRepository()))
                         .successHandler(oAuth2AuthenticationSuccessHandler)
                 )
                 

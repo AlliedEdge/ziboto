@@ -23,6 +23,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.ziboto.backend.common.dto.ApiResponse;
 
@@ -567,6 +568,22 @@ public class GlobalExceptionHandler {
     }
     
     // ==================== HTTP Exceptions ====================
+
+    /**
+     * Missing static resources are normal 404s. In particular browsers commonly request
+     * /favicon.ico while following an OAuth redirect; do not let the catch-all handler
+     * turn that request into a 500 response.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Object>> handleNoResourceFoundException(
+            NoResourceFoundException ex,
+            WebRequest request) {
+
+        log.debug("Static resource not found - Path: {}", getRequestPath(request));
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error("Resource not found"));
+    }
     
     /**
      * Handle optimistic locking failures.
