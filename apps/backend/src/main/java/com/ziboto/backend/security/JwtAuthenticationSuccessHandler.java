@@ -1,6 +1,6 @@
 package com.ziboto.backend.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.ziboto.backend.auth.dto.AuthenticationResponse;
 import com.ziboto.backend.common.dto.ApiResponse;
 import com.ziboto.backend.user.dto.UserResponse;

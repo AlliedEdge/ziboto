@@ -1,7 +1,7 @@
 package com.ziboto.backend.user.service;
 
 import com.ziboto.backend.file.repository.FileMetadataRepository;
-import com.ziboto.backend.storage.repository.BucketRepository;
+import com.ziboto.backend.file.repository.FolderRepository;
 import com.ziboto.backend.user.dto.StorageUsageResponse;
 import com.ziboto.backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class StorageUsageServiceImpl implements StorageUsageService {
     
     private final UserRepository userRepository;
     private final FileMetadataRepository fileMetadataRepository;
-    private final BucketRepository bucketRepository;
+    private final FolderRepository folderRepository;
     private final StorageUsageCacheService cacheService;
     
     @Override
@@ -62,9 +62,9 @@ public class StorageUsageServiceImpl implements StorageUsageService {
         // This uses an optimized COUNT query without loading entities
         Long totalFiles = fileMetadataRepository.countByUserId(userId);
         
-        // Count total folders (buckets)
+        // Count total folders
         // This uses an optimized COUNT query without loading entities
-        Long totalFolders = bucketRepository.countByOwnerId(userId);
+        Long totalFolders = folderRepository.countByUserId(userId);
         
         log.debug("Storage usage calculated: userId={}, quota={}, used={}, files={}, folders={}", 
                 userId, storageQuota, usedStorage, totalFiles, totalFolders);

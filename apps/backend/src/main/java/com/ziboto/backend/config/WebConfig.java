@@ -1,20 +1,14 @@
 package com.ziboto.backend.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
+/**
+ * Web configuration for the application.
+ * Spring Boot 4 auto-configures Jackson 3 (JsonMapper) by default.
+ * Additional customization can be done through application.yml properties.
+ */
 @Configuration
 public class WebConfig {
-
-    @Bean
-    public ObjectMapper objectMapper() {
-        return Jackson2ObjectMapperBuilder.json()
-                .modules(new JavaTimeModule())
-                .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                .build();
-    }
+    // Jackson 3 (JsonMapper) is auto-configured by Spring Boot 4
+    // Configure through application.yml: spring.jackson.*
 }

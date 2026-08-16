@@ -1,9 +1,15 @@
 spring:
   jpa:
     show-sql: false
+    hibernate:
+      ddl-auto: validate
     properties:
       hibernate:
         format_sql: false
+
+  rabbitmq:
+    ssl:
+      enabled: true
 
 server:
   error:

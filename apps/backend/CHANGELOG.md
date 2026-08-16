@@ -158,12 +158,135 @@ All notable changes to the Ziboto Backend application are documented here.
 
 ---
 
+## [4.0.0] - 2026-08-12
+
+### Added - V4: Cloud-Native Infrastructure
+- **Kubernetes Orchestration**
+  - Complete Kubernetes manifests for production deployment
+  - Namespace isolation with resource quotas
+  - ConfigMaps for non-sensitive configuration
+  - Secrets management for sensitive data
+  - StatefulSets for PostgreSQL, Redis, and RabbitMQ
+  - Deployments for backend (Spring Boot) and frontend (React)
+  - Services (ClusterIP) for internal communication
+  - Ingress with NGINX controller and SSL/TLS termination
+  - Horizontal Pod Autoscaler (HPA) for auto-scaling
+  - PersistentVolumeClaims for data persistence
+  - Pod anti-affinity for high availability
+  - Health checks (liveness, readiness, startup probes)
+  - Resource limits and requests for all containers
+
+- **Terraform Infrastructure-as-Code (AWS)**
+  - VPC with public/private/database subnets across 3 AZs
+  - EKS cluster (v1.28) with managed node groups
+  - RDS PostgreSQL 15 (Multi-AZ, automated backups, encryption)
+  - ElastiCache Redis 7 cluster (Multi-AZ, automatic failover)
+  - S3 buckets with versioning, encryption, and lifecycle policies
+  - IAM roles and policies with least privilege
+  - IAM Roles for Service Accounts (IRSA) - no long-lived credentials
+  - KMS keys for encryption at rest (RDS, S3, EBS, Secrets Manager)
+  - AWS Secrets Manager for sensitive data
+  - Security groups with minimal access
+  - VPC Flow Logs for network monitoring
+  - CloudWatch Log Groups with 30-day retention
+  - CloudWatch alarms for RDS, ElastiCache, and S3
+  - SNS topics for notifications
+  - AWS Load Balancer Controller for EKS
+  - EBS CSI Driver for persistent volumes
+
+- **Auto-Scaling**
+  - Backend HPA: 3-10 replicas based on CPU (70%) and memory (80%)
+  - Frontend HPA: 2-5 replicas based on CPU (70%) and memory (80%)
+  - EKS Cluster Autoscaler: 2-10 nodes based on demand
+  - Intelligent scaling policies with stabilization windows
+
+- **High Availability**
+  - Multi-AZ deployment for all critical services
+  - Database replication with automatic failover
+  - Redis cluster with automatic failover
+  - Pod anti-affinity rules to spread across nodes
+  - Rolling updates with zero downtime
+  - Deletion protection for RDS
+
+- **Security Enhancements**
+  - Network isolation with VPC and security groups
+  - Encryption at rest for all data stores (KMS)
+  - Encryption in transit (TLS/SSL)
+  - IAM roles for service accounts (no credentials in pods)
+  - Secrets stored in AWS Secrets Manager
+  - Non-root containers with security contexts
+  - Pod security policies
+  - Certificate management with cert-manager
+  - Let's Encrypt SSL certificates
+
+- **Monitoring & Observability**
+  - CloudWatch integration for AWS resources
+  - Prometheus metrics collection
+  - Grafana dashboards
+  - Centralized logging with CloudWatch Logs
+  - Application logs from all pods
+  - Audit logs for security events
+  - Performance Insights for RDS
+  - Enhanced monitoring for RDS and ElastiCache
+  - Metric alarms for CPU, memory, storage, and connections
+
+- **Disaster Recovery**
+  - Automated daily backups for RDS (30-day retention)
+  - Point-in-time recovery enabled
+  - S3 versioning for file recovery
+  - Cross-region backup replication (configurable)
+  - Recovery Time Objective (RTO): < 1 hour
+  - Recovery Point Objective (RPO): < 15 minutes
+
+- **Deployment Automation**
+  - `setup-aws-infrastructure.sh`: Terraform automation script
+  - `deploy-k8s.sh`: Kubernetes deployment script
+  - Environment-specific configurations (dev, staging, production)
+  - Kustomize overlays for multi-environment support
+  - Rolling update strategy with health checks
+  - Automated rollback on failure
+
+- **Cost Optimization**
+  - S3 Intelligent Tiering and Glacier transitions
+  - EBS gp3 volumes with optimized IOPS
+  - Right-sized instance types
+  - Cluster autoscaler for efficient resource usage
+  - Lifecycle policies for old data cleanup
+  - Estimated cost: $600-700/month for production
+
+- **Documentation**
+  - Comprehensive Phase 4 implementation guide
+  - Kubernetes manifests documentation
+  - Terraform module documentation
+  - Deployment and operations runbooks
+  - Troubleshooting guides
+  - Security best practices
+  - Cost optimization strategies
+
+### Changed
+- Updated Dockerfile with multi-stage builds for smaller images
+- Enhanced application.yml with production-ready settings
+- Configured Spring Boot Actuator for Kubernetes health checks
+- Updated logging configuration for CloudWatch compatibility
+- Optimized JVM settings for containerized environments
+
+### Infrastructure
+- 10 Kubernetes YAML manifests across multiple categories
+- 8 Terraform modules for AWS infrastructure
+- 100+ lines of Terraform code per module
+- 3 automation scripts for deployment
+- Support for 3 environments (dev, staging, production)
+- Multi-cloud foundation (AWS complete, GCP/Azure ready)
+
+### Database Migrations
+- No new migrations (infrastructure only)
+
 ## Versioning Strategy
 
 - **v1**: MVP with core storage functionality
 - **v2**: Feature maturity (sharing, versioning, search, notifications)
 - **v3**: User experience (activity, comments, analytics, galleries, previews)
-- **v4**: Cloud-native infrastructure (Kubernetes, Terraform)
+- **v4**: Cloud-native infrastructure (Kubernetes, Terraform) ✅
 - **v5**: Intelligence & mobile (AI, mobile apps, collaboration)
 
 ## Technology Stack
