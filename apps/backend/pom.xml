@@ -68,6 +68,12 @@
 			<artifactId>jedis</artifactId>
 		</dependency>
 		
+		<!-- Spring Session Redis — shared OAuth2 session state across ASG EC2 instances -->
+		<dependency>
+			<groupId>org.springframework.session</groupId>
+			<artifactId>spring-session-data-redis</artifactId>
+		</dependency>
+		
 		<!-- RabbitMQ -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
