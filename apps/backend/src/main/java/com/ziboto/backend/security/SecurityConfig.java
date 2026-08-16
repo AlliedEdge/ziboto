@@ -74,6 +74,7 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final UserDetailsService userDetailsService;
     private final CorsConfigurationSource corsConfigurationSource;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     
     /**
      * Configure HTTP security for the application.
@@ -115,6 +116,8 @@ public class SecurityConfig {
                                 "/swagger-ui/**",            // Swagger UI
                                 "/swagger-ui.html",          // Swagger UI HTML
                                 "/v3/api-docs/**",           // OpenAPI v3 docs
+                                "/login/oauth2/**",          // OAuth2 login endpoints
+                                "/oauth2/**",                // OAuth2 authorization endpoints
                                 "/error"                     // Error endpoint
                         ).permitAll()
                         
@@ -134,6 +137,11 @@ public class SecurityConfig {
                         // Stateless sessions - no server-side session storage
                         // All authentication state stored in JWT token
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                
+                // Configure OAuth2 login
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2AuthenticationSuccessHandler)
                 )
                 
                 // Register custom authentication provider

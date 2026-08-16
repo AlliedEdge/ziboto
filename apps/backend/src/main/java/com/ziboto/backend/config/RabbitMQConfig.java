@@ -192,7 +192,16 @@ public class RabbitMQConfig {
     // Message Converter and Template
     // -------------------------------------------------------------------------
     
+    /**
+     * Creates a Jackson2JsonMessageConverter for RabbitMQ messages.
+     * Note: Jackson2JsonMessageConverter is deprecated in Spring Framework 7.0
+     * but still necessary for RabbitMQ message conversion as the replacement
+     * works with Jackson 3 and RabbitMQ uses Jackson 2.
+     * 
+     * @return MessageConverter configured with JSON support
+     */
     @Bean
+    @SuppressWarnings("deprecation") // Jackson2JsonMessageConverter deprecated but required for RabbitMQ
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }

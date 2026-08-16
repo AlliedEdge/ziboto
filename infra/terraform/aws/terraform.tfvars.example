@@ -1,0 +1,69 @@
+# Ziboto AWS Infrastructure Configuration
+# Copy this file to terraform.tfvars and update with your values
+
+# Project Configuration
+project_name = "ziboto"
+environment  = "prod"
+aws_region   = "us-east-1"
+
+# VPC Configuration
+vpc_cidr           = "10.0.0.0/16"
+availability_zones = ["us-east-1a", "us-east-1b"]
+
+# EC2 Backend Configuration
+ec2_instance_type = "t3.medium"  # t3.micro for testing, t3.medium for production
+ec2_min_size      = 2           # Minimum 2 instances for high availability
+ec2_max_size      = 10          # Maximum 10 instances for auto-scaling
+ec2_desired_size  = 2           # Start with 2 instances
+backend_port      = 8080        # Spring Boot default port
+
+# RDS PostgreSQL Configuration
+rds_instance_class          = "db.t3.micro" # db.t3.small or larger for production
+rds_allocated_storage       = 20           # GB
+rds_max_allocated_storage   = 100          # GB (auto-scaling limit)
+rds_backup_retention_days   = 7            # Days to retain backups
+rds_multi_az                = false        # Set to true for production HA
+
+# ElastiCache Redis Configuration
+redis_node_type       = "cache.t3.micro"   # cache.t3.small or larger for production
+redis_num_cache_nodes = 1                  # Single node for dev, 2+ for production
+
+# Amazon MQ RabbitMQ Configuration
+amazonmq_instance_type  = "mq.t3.micro"           # mq.m5.large for production
+amazonmq_deployment_mode = "SINGLE_INSTANCE"      # Use ACTIVE_STANDBY_MULTI_AZ for production
+
+# S3 Configuration
+s3_bucket_name       = "ziboto-prod-files-YOUR_ACCOUNT_ID-us-east-1"
+s3_enable_versioning = false               # Enable for production
+s3_lifecycle_days    = 90                  # Days before INTELLIGENT_TIERING
+
+# Monitoring Configuration
+enable_monitoring    = true
+log_retention_days   = 7                   # CloudWatch log retention
+
+# Budget Configuration
+monthly_budget_limit = 100                 # USD per month
+budget_alert_emails  = [
+  "your-email@example.com",
+  # Add more email addresses for budget alerts
+]
+
+# Domain Configuration (Optional - for HTTPS)
+domain_name     = ""                       # e.g., "app.yourdomain.com"
+certificate_arn = ""                       # ACM certificate ARN for HTTPS
+
+# Secrets (CHANGE THESE!)
+# Generate strong passwords and base64-encoded secrets
+
+# JWT Secret: Run `openssl rand -base64 64` to generate
+jwt_secret = "CHANGE_ME_BASE64_ENCODED_SECRET_256_BITS_OR_MORE"
+
+# Database Password: Use strong password (letters, numbers, symbols)
+db_password = "CHANGE_ME_STRONG_PASSWORD"
+
+# RabbitMQ Password: Use strong password
+rabbitmq_password = "CHANGE_ME_STRONG_PASSWORD"
+
+# Google OAuth Configuration
+google_client_id = "your-google-client-id-here"
+google_client_secret = "your-rotated-google-client-secret-here"

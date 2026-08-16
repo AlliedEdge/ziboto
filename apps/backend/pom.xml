@@ -80,12 +80,6 @@
 			<artifactId>spring-boot-starter-oauth2-client</artifactId>
 		</dependency>
 		
-		<!-- Elasticsearch -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-elasticsearch</artifactId>
-		</dependency>
-		
 		<!-- JWT -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
