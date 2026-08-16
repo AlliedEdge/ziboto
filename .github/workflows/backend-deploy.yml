@@ -125,6 +125,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_DEPLOYMENT_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-session-name: GitHubActions-Backend-Deploy
+          retry-max-attempts: 1
       
       - name: Verify AWS credentials
         run: |
