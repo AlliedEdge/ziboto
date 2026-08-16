@@ -111,6 +111,11 @@ output "backend_instance_profile_name" {
   value       = aws_iam_instance_profile.backend.name
 }
 
+output "github_actions_deployment_role_arn" {
+  description = "IAM role ARN for GitHub Actions OIDC deployment (set this as the AWS_DEPLOYMENT_ROLE_ARN repository secret)"
+  value       = aws_iam_role.github_actions_deploy.arn
+}
+
 # Security Group Outputs
 output "alb_security_group_id" {
   description = "Security group ID for ALB"
