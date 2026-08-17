@@ -313,6 +313,29 @@ jobs:
           if [ "$HTTP_STATUS" != "200" ]; then
             echo "⚠️ Warning: Health endpoint not responding with 200 OK"
           fi
+
+      - name: Verify production CORS preflight
+        run: |
+          echo "🔍 Verifying CORS preflight for production frontend..."
+          
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X OPTIONS \
+            "https://api.ziboto.alliededge.app/api/v1/auth/login" \
+            -H "Origin: https://ziboto.alliededge.app" \
+            -H "Access-Control-Request-Method: POST" \
+            -H "Access-Control-Request-Headers: content-type" || true)
+          
+          echo "CORS preflight status: $HTTP_STATUS"
+          
+          if [ "$HTTP_STATUS" != "200" ] && [ "$HTTP_STATUS" != "204" ]; then
+            echo "❌ Production CORS preflight failed with status $HTTP_STATUS"
+            curl -i -X OPTIONS "https://api.ziboto.alliededge.app/api/v1/auth/login" \
+              -H "Origin: https://ziboto.alliededge.app" \
+              -H "Access-Control-Request-Method: POST" \
+              -H "Access-Control-Request-Headers: content-type" || true
+            exit 1
+          fi
+          
+          echo "✅ Production CORS preflight succeeded"
       
       - name: Deployment summary
         if: always()
