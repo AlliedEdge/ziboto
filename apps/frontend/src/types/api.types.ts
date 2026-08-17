@@ -103,6 +103,7 @@ export interface ApiErrorResponse {
   timestamp?: string;
   path?: string;
   details?: Record<string, any>;
+  errors?: Record<string, string>;
   validationErrors?: ValidationError[];
 }
 

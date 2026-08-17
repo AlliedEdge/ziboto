@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Logo from '../components/ui/Logo';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
+import { LoadingScreen } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -14,20 +16,55 @@ import {
   Folder,
   FolderOpen,
 } from 'lucide-react';
-import type { InitializationData } from '../services/appInitService';
-
-interface DashboardProps {
-  initData: InitializationData;
-}
+import { appInitService, type InitializationData } from '../services/appInitService';
 
 /**
  * Dashboard page
  * Displays after successful initialization with all loaded data
  */
-const Dashboard: React.FC<DashboardProps> = ({ initData }) => {
-  const { logout } = useAuth();
+const Dashboard = () => {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const { user, storageQuota, recentFiles, workspace } = initData;
+  const [initData, setInitData] = useState<InitializationData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+
+    const loadDashboardData = async () => {
+      try {
+        const data = await appInitService.initializeApp(user);
+        setInitData(data);
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error);
+        setInitData({
+          user,
+          storageQuota: { used: 0, total: 0, percentage: 0 },
+          recentFiles: [],
+          workspace: {
+            id: 'default',
+            name: 'My Workspace',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDashboardData();
+  }, [user]);
+
+  if (isLoading || !initData) {
+    return <LoadingScreen message="Loading dashboard..." />;
+  }
+
+  const { storageQuota, recentFiles, workspace } = initData;
+  const dashboardUser = initData.user;
 
   const handleLogout = async () => {
     await logout();
@@ -118,7 +155,7 @@ const Dashboard: React.FC<DashboardProps> = ({ initData }) => {
           className="space-y-2"
         >
           <h1 className="text-4xl font-bold text-white">
-            Welcome back, {user.name}!
+            Welcome back, {dashboardUser.name}!
           </h1>
           <p className="text-dark-300 text-lg">
             Here's what's happening in your workspace
@@ -172,11 +209,11 @@ const Dashboard: React.FC<DashboardProps> = ({ initData }) => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-semibold text-white truncate">
-                    {user.name}
+                    {dashboardUser.name}
                   </h3>
-                  <p className="text-primary-400 text-sm truncate">{user.email}</p>
-                  {user.role && (
-                    <p className="text-dark-400 text-xs mt-1">Role: {user.role}</p>
+                  <p className="text-primary-400 text-sm truncate">{dashboardUser.email}</p>
+                  {dashboardUser.role && (
+                    <p className="text-dark-400 text-xs mt-1">Role: {dashboardUser.role}</p>
                   )}
                 </div>
               </div>
