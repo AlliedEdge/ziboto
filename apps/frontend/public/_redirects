@@ -1,0 +1,13 @@
+# SPA fallback — serve index.html for client-side routes (Amplify / CloudFront)
+/*    /index.html   200
+
+# Normalize trailing slashes for React Router paths
+/register/    /register    301
+/login/       /login       301
+/forgot-password/    /forgot-password    301
+/reset-password/     /reset-password     301
+/verify-email/       /verify-email       301
+/verify-email-pending/    /verify-email-pending    301
+/files/       /files       301
+/dashboard/   /dashboard   301
+/trash/       /trash       301
