@@ -145,9 +145,12 @@ app:
       expiration: ${JWT_EXPIRATION:900000} # 15 minutes in milliseconds (900000ms = 15min)
       refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 7 days in milliseconds (604800000ms = 7d)
     cors:
-      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+      # Credentials are enabled, so this is an explicit allow-list rather than a wildcard.
+      # Deployments may add origins through CORS_ALLOWED_ORIGINS, but must retain the
+      # production frontend when browser access is required.
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:https://ziboto.alliededge.app,http://localhost:5173}
       allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
-      allowed-headers: "*"
+      allowed-headers: Content-Type,Authorization,X-Requested-With
       allow-credentials: true
       max-age: 3600
   

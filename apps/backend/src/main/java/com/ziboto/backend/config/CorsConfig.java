@@ -23,15 +23,9 @@ public class CorsConfig {
         
         AppProperties.Security.Cors corsProps = appProperties.getSecurity().getCors();
         
-        configuration.setAllowedOrigins(
-                Arrays.asList(corsProps.getAllowedOrigins().split(","))
-        );
-        configuration.setAllowedMethods(
-                Arrays.asList(corsProps.getAllowedMethods().split(","))
-        );
-        configuration.setAllowedHeaders(
-                List.of(corsProps.getAllowedHeaders())
-        );
+        configuration.setAllowedOrigins(splitAndTrim(corsProps.getAllowedOrigins()));
+        configuration.setAllowedMethods(splitAndTrim(corsProps.getAllowedMethods()));
+        configuration.setAllowedHeaders(splitAndTrim(corsProps.getAllowedHeaders()));
         configuration.setAllowCredentials(corsProps.getAllowCredentials());
         configuration.setMaxAge(corsProps.getMaxAge());
         
@@ -39,5 +33,12 @@ public class CorsConfig {
         source.registerCorsConfiguration("/**", configuration);
         
         return source;
+    }
+
+    private List<String> splitAndTrim(String value) {
+        return Arrays.stream(value.split(","))
+                .map(String::trim)
+                .filter(entry -> !entry.isEmpty())
+                .toList();
     }
 }

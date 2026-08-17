@@ -95,7 +95,6 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             // Redirect to frontend with error
             String errorRedirectUrl = UriComponentsBuilder.fromUriString(frontendRedirectUrl)
                     .queryParam("error", "oauth_failed")
-                    .queryParam("message", e.getMessage())
                     .build()
                     .toUriString();
             

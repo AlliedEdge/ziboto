@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -77,6 +78,7 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
     private final CorsConfigurationSource corsConfigurationSource;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
     
     /**
      * Configure HTTP security for the application.
@@ -109,6 +111,9 @@ public class SecurityConfig {
                 
                 // Configure authorization rules
                 .authorizeHttpRequests(auth -> auth
+                        // CORS preflight must be allowed to complete before any authentication
+                        // rule can reject the browser's subsequent request.
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Public endpoints (no authentication required)
                         .requestMatchers(
                                 "/api/v1/auth/**",           // Authentication endpoints
@@ -156,6 +161,10 @@ public class SecurityConfig {
                                 .authorizationRequestRepository(
                                         new HttpSessionOAuth2AuthorizationRequestRepository()))
                         .successHandler(oAuth2AuthenticationSuccessHandler)
+                        // The default handler redirects to /login?error and discards the
+                        // OAuth exception. Keep that endpoint protected, log the failure on
+                        // the server, and return only a generic error code to the frontend.
+                        .failureHandler(oAuth2AuthenticationFailureHandler)
                 )
                 
                 // Register custom authentication provider
