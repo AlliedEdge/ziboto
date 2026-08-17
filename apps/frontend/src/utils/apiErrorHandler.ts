@@ -6,6 +6,8 @@
 import { AxiosError } from 'axios';
 import type { ApiErrorResponse, ApiError } from '../types/api.types';
 
+type AuthenticationOperation = 'login' | 'register' | 'forgotPassword' | 'resetPassword' | 'verifyEmail' | 'logout';
+
 /**
  * Extract error message from various error formats
  */
@@ -84,7 +86,9 @@ export const normalizeError = (error: unknown): ApiError => {
     return {
       message: extractErrorMessage(error),
       statusCode: axiosError.response?.status || 500,
+      code: axiosError.response?.data?.errorCode ?? axiosError.response?.data?.code,
       details: axiosError.response?.data?.details,
+      fieldErrors: toFieldErrors(axiosError.response?.data?.errors),
       validationErrors: axiosError.response?.data?.validationErrors,
     };
   }
@@ -107,9 +111,68 @@ export const normalizeError = (error: unknown): ApiError => {
  * Returns null if not present (e.g. network errors or non-BaseException responses).
  */
 export const extractErrorCode = (error: unknown): string | null => {
+  if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string') {
+    return error.code;
+  }
   if (!isAxiosError(error)) return null;
   const data = (error as AxiosError<ApiErrorResponse>).response?.data;
-  return data?.errorCode ?? null;
+  return data?.errorCode ?? data?.code ?? null;
+};
+
+/** Map authentication failures once, using backend error codes before status fallbacks. */
+export const mapAuthenticationError = (error: unknown, operation: AuthenticationOperation): string => {
+  const normalized = normalizeError(error);
+  const code = extractErrorCode(error);
+
+  if (code === 'USER_EMAIL_EXISTS' || code === 'EMAIL_ALREADY_EXISTS') {
+    return 'An account with this email already exists. Try logging in instead.';
+  }
+  if (code === 'USER_USERNAME_EXISTS' || code === 'USERNAME_ALREADY_EXISTS') {
+    return 'Username already exists. Please choose another username.';
+  }
+  if (code === 'INVALID_CREDENTIALS' && operation === 'login') {
+    return 'Incorrect email/username or password.';
+  }
+  if (code === 'ACCOUNT_DISABLED' || code === 'ACCOUNT_LOCKED') {
+    return 'Your account is currently unavailable. Please try again later or contact support.';
+  }
+  if (code === 'RATE_LIMIT_EXCEEDED' || code?.endsWith('_RATE_LIMIT_EXCEEDED')) {
+    return 'Too many attempts. Please wait a few minutes and try again.';
+  }
+  if (code === 'VALIDATION_ERROR' && normalized.fieldErrors?.email) {
+    return 'Please enter a valid email address.';
+  }
+  if (code === 'VALIDATION_ERROR' && normalized.fieldErrors?.password) {
+    return 'Password must meet the required requirements.';
+  }
+
+  switch (normalized.statusCode) {
+    case 401:
+      return operation === 'login' ? 'Incorrect email/username or password.' : normalized.message;
+    case 403:
+      return 'Your account is currently unavailable. Please try again later or contact support.';
+    case 409:
+      return operation === 'register' ? 'An account with these details already exists. Please review and try again.' : normalized.message;
+    case 429:
+      return 'Too many attempts. Please wait a few minutes and try again.';
+    case 500:
+      return 'Something went wrong on our server. Please try again later.';
+    case 502:
+    case 503:
+    case 504:
+      return 'The server is temporarily unavailable. Please try again later.';
+    default:
+      return isNetworkError(error)
+        ? 'Unable to connect to the server. Please try again.'
+        : normalized.message;
+  }
+};
+
+const toFieldErrors = (errors: unknown): Record<string, string> | undefined => {
+  if (!errors || typeof errors !== 'object' || Array.isArray(errors)) return undefined;
+  return Object.fromEntries(
+    Object.entries(errors).filter(([, value]) => typeof value === 'string')
+  ) as Record<string, string>;
 };
 
 /**

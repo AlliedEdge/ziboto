@@ -98,6 +98,7 @@ export interface ApiErrorResponse {
   message: string;
   error?: string;
   errorCode?: string;
+  code?: string;
   statusCode: number;
   timestamp?: string;
   path?: string;
@@ -124,7 +125,9 @@ export interface ApiRequestState {
 export interface ApiError {
   message: string;
   statusCode?: number;
+  code?: string;
   details?: Record<string, any>;
+  fieldErrors?: Record<string, string>;
   validationErrors?: ValidationError[];
 }
 

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { authService, type User, type LoginCredentials, type RegisterData } from '../services/authService';
 import { tokenService } from '../services/tokenService';
-import { extractErrorMessage } from '../utils/apiErrorHandler';
+import { mapAuthenticationError } from '../utils/apiErrorHandler';
 
 interface AuthState {
   // State
@@ -89,7 +89,7 @@ export const useAuthStore = create<AuthState>()(
               loadingStates: { ...get().loadingStates, login: false },
             });
           } catch (error: any) {
-            const errorMessage = extractErrorMessage(error);
+            const errorMessage = mapAuthenticationError(error, 'login');
             
             set({
               user: null,
@@ -129,7 +129,7 @@ export const useAuthStore = create<AuthState>()(
               loadingStates: { ...get().loadingStates, register: false },
             });
           } catch (error: any) {
-            const errorMessage = extractErrorMessage(error);
+            const errorMessage = mapAuthenticationError(error, 'register');
 
             set({
               user: null,
