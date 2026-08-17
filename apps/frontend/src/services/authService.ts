@@ -77,7 +77,7 @@ export const authService = {
       // Backend returns ApiResponse<AuthResponseDto>, so we need to unwrap it
       return response.data.data;
     } catch (error: any) {
-      logError(error, 'authService.login', { usernameOrEmail: credentials.usernameOrEmail });
+      logError(error, 'authService.login');
       throw normalizeError(error);
     }
   },
@@ -102,7 +102,7 @@ export const authService = {
       );
       // Backend returns 202 with no token payload — nothing to unwrap
     } catch (error: any) {
-      logError(error, 'authService.register', { email: data.email });
+      logError(error, 'authService.register');
       throw normalizeError(error);
     }
   },

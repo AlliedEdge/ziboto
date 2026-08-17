@@ -11,6 +11,7 @@ import {
   VerifyEmailPending,
   SessionExpired,
   InitializingApp,
+  Dashboard,
   FileManager,
   TrashBin,
 } from './pages';
@@ -47,6 +48,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <FileManager />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
               </ProtectedRoute>
             }
           />

@@ -20,16 +20,16 @@ axiosInstance.interceptors.request.use(
   (config) => {
     const token = tokenService.getAccessToken();
     
-    console.log('[Axios Request]', {
-      url: config.url,
-      hasToken: !!token,
-      tokenLength: token?.length || 0,
-    });
+    if (import.meta.env.DEV) {
+      console.debug('[Axios Request]', { method: config.method, url: config.url, hasToken: !!token });
+    }
     
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     } else {
-      console.warn('[Axios Request] No access token available for:', config.url);
+      if (import.meta.env.DEV) {
+        console.debug('[Axios Request] No access token available for:', config.url);
+      }
     }
     
     return config;
