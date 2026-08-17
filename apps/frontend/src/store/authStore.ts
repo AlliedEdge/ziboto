@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { authService, type User, type LoginCredentials, type RegisterData } from '../services/authService';
 import { tokenService } from '../services/tokenService';
-import { mapAuthenticationError } from '../utils/apiErrorHandler';
+import { extractErrorMessage, mapAuthenticationError } from '../utils/apiErrorHandler';
 
 interface AuthState {
   // State
