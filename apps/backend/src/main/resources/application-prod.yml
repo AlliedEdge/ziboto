@@ -11,6 +11,12 @@ spring:
     ssl:
       enabled: true
 
+app:
+  security:
+    cors:
+      # Explicit credentialed browser origin; never fall back to a wildcard.
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:https://ziboto.alliededge.app}
+
 server:
   error:
     include-stacktrace: never
